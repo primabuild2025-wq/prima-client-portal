@@ -19,7 +19,7 @@ export default function Header() {
   return (
     <header className="flex items-center justify-between border-b border-white/10 bg-black px-6 py-4 text-white">
       <div className="flex items-center gap-4">
-        <img src="/prima-build-04.svg" alt="Prima Build logo" className="h-12 w-auto" />
+        <img src="/prima_build-04.png" alt="Prima Build logo" className="h-12 w-auto" />
         <div>
           <p className="text-sm text-white/70">Prima Build</p>
           <p className="text-xs text-white/50">
