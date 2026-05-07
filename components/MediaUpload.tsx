@@ -1,0 +1,129 @@
+'use client';
+
+import { useState, useRef } from 'react';
+import { useLang } from '@/lib/context/LanguageContext';
+
+interface MediaUploadProps {
+  projectId: string;
+  taskId?: string;
+  onUploadComplete?: (file: any) => void;
+}
+
+function formatTimestamp(date: Date, lang: string): string {
+  return date.toLocaleString(lang === 'HE' ? 'he-IL' : 'en-US', {
+    year:   'numeric',
+    month:  'short',
+    day:    'numeric',
+    hour:   '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export default function MediaUpload({ projectId, taskId, onUploadComplete }: MediaUploadProps) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [description, setDescription] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const [lastUploaded, setLastUploaded] = useState<{ name: string; timestamp: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { lang, t } = useLang();
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    setError(null);
+    setLastUploaded(null);
+
+    const uploadedAt = new Date();
+    const timestamp  = formatTimestamp(uploadedAt, lang);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('projectId', projectId);
+      if (taskId) formData.append('taskId', taskId);
+      formData.append('description', description.substring(0, 20));
+      // Send timestamp so the API can store it
+      formData.append('uploadedAt', uploadedAt.toISOString());
+
+      const res = await fetch('/api/media/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setDescription('');
+      setLastUploaded({ name: file.name, timestamp });
+
+      if (onUploadComplete) onUploadComplete(data.file);
+      if (data.redFlag) alert('⚠️ Red flag: File uploaded after project activation.');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-white/70">
+          {t('Description', 'תיאור')} <span className="text-white/30">({t('max 20 chars', 'עד 20 תווים')})</span>
+        </label>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value.substring(0, 20))}
+          className="w-full rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-sm text-white outline-none focus:border-white"
+          placeholder={t('e.g. Site photo day 1', 'לדוג. תמונת אתר יום 1')}
+          maxLength={20}
+        />
+        <p className="mt-1 text-right text-xs text-white/30">{description.length}/20</p>
+      </div>
+
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleUpload(f); }}
+        onClick={() => fileInputRef.current?.click()}
+        className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition ${
+          dragOver ? 'border-white/40 bg-white/5' : 'border-white/10 hover:border-white/20'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="video/*,image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }}
+        />
+        {uploading ? (
+          <div className="flex flex-col items-center gap-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            <p className="text-sm text-white/50">{t('Uploading…', 'מעלה...')}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-2xl">📁</p>
+            <p className="text-sm text-white/70">{t('Drop a file or click to upload', 'גרור קובץ או לחץ להעלאה')}</p>
+            <p className="text-xs text-white/30">{t('Videos, photos, documents', 'סרטונים, תמונות, מסמכים')}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Success — show filename + timestamp */}
+      {lastUploaded && (
+        <div className="rounded-2xl border border-green-500/20 bg-green-500/5 px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-green-400">
+              ✓ {t('Uploaded', 'הועלה')}: {lastUploaded.name}
+            </p>
+            <p className="text-xs text-white/30 mt-0.5">
+              {t('at', 'ב')} {lastUploaded.timestamp}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-sm text-red-400">{error}</p>}
+    </div>
+  );
+}

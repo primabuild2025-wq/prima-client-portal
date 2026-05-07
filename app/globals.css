@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #FFFFFF;
+  background-color: #000000;
+}
+
+html, body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #000000;
+  color: #FFFFFF;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+::selection {
+  background: #11144C;
+  color: #FFFFFF;
+}
