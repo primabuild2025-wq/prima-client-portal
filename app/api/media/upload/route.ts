@@ -17,6 +17,8 @@ async function getCurrentUser() {
   return user;
 }
 
+
+
 function getMediaType(mimeType: string): 'video' | 'photo' | 'document' {
   if (mimeType.startsWith('video/')) return 'video';
   if (mimeType.startsWith('image/')) return 'photo';
@@ -34,6 +36,8 @@ export async function POST(request: Request) {
     const taskId      = formData.get('taskId') as string | null;
     const description = formData.get('description') as string || '';
     const uploadedAt  = (formData.get('uploadedAt') as string) || new Date().toISOString();
+    const category    = formData.get('category') as string | null;
+    const fileType    = formData.get('fileType') as string | null;
 
     if (!file || !projectId)
       return NextResponse.json({ error: 'File and projectId are required' }, { status: 400 });
@@ -82,17 +86,18 @@ export async function POST(request: Request) {
       dbRecord = data;
     } else {
       const { data, error } = await supabaseAdmin.from('files').insert({
-        project_id:   projectId,
-        task_id:      taskId || null,
-        uploader_id:  currentUser.id,
-        object_key:   boxFile.id,
-        description:  description || file.name.substring(0, 20),
-        mime_type:    file.type,
-        size:         file.size,
-        red_flag:     isRedFlag,
-        uploaded_at:  uploadedAt,
-        // pending_approval: only admins see it until approved
+        project_id:       projectId,
+        task_id:          taskId || null,
+        uploader_id:      currentUser.id,
+        object_key:       boxFile.id,
+        description:      description || file.name.substring(0, 20),
+        mime_type:        file.type,
+        size:             file.size,
+        red_flag:         isRedFlag,
+        uploaded_at:      uploadedAt,
+        category:         category || null,
         pending_approval: isRedFlag,
+        file_type: fileType || 'file',
         metadata: {
           box_file_id:   boxFile.id,
           original_name: file.name,
@@ -107,11 +112,9 @@ export async function POST(request: Request) {
     if (isRedFlag) {
       await supabaseAdmin.from('projects').update({ red_flag: true }).eq('id', projectId);
 
-      // Get project name
       const { data: projectData } = await supabaseAdmin
         .from('projects').select('name').eq('id', projectId).single();
 
-      // Get task name if taskId exists
       let taskName = '';
       if (taskId) {
         const { data: taskData } = await supabaseAdmin
@@ -125,12 +128,10 @@ export async function POST(request: Request) {
         ? `PDF uploaded to active project "${projectName}" — task: "${taskName}" — file: "${fileName}"`
         : `PDF uploaded to active project "${projectName}" — file: "${fileName}"`;
 
-      // Notify all admins and management
       const { data: adminUsers } = await supabaseAdmin
         .from('users').select('id').in('role', ['admin', 'management']);
 
       if (adminUsers && adminUsers.length > 0) {
-        // Check if a notification already exists for this file in the last 10 seconds
         const { data: existing } = await supabaseAdmin
           .from('notifications')
           .select('id')
@@ -172,10 +173,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({
-      success:  true,
-      file:     dbRecord,
+      success:   true,
+      file:      dbRecord,
       boxFileId: boxFile.id,
-      redFlag:  isRedFlag,
+      redFlag:   isRedFlag,
     });
   } catch (err: any) {
     console.error('Upload error:', err);

@@ -29,11 +29,11 @@ export default function NotificationsPage() {
       if (!session) { window.location.href = '/auth/login'; return; }
 
       const { data, error: notifError } = await supabase
-      .from('notifications')
-      .select('*, actor:users!actor_id(name)')
-      .eq('user_id', session.user.id)
-      .order('read', { ascending: true })
-      .order('created_at', { ascending: false });
+        .from('notifications')
+        .select('*, actor:users!actor_id(name)')
+        .eq('user_id', session.user.id)
+        .order('read', { ascending: true })
+        .order('created_at', { ascending: false });
 
       if (notifError) throw notifError;
       setNotifications(data || []);
@@ -45,52 +45,55 @@ export default function NotificationsPage() {
   };
 
   const handleApprove = async (notif: any) => {
-  if (!approvalNote.trim()) return;
-  setSaving(true);
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!approvalNote.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    const { data: currentUser } = await supabase
-      .from('users').select('*').eq('id', session.user.id).single();
+      const { data: currentUser } = await supabase
+        .from('users').select('*').eq('id', session.user.id).single();
 
-    const now        = new Date().toISOString();
-    const authorName = currentUser?.name || 'Unknown';
-    const noteHeader = `[${new Date(now).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric',
-    })} at ${new Date(now).toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit',
-    })} — ${authorName}]`;
+      const now        = new Date().toISOString();
+      const authorName = currentUser?.name || 'Unknown';
+      const noteHeader = `[${new Date(now).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      })} at ${new Date(now).toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit',
+      })} — ${authorName}]`;
 
-    // Clear pending_approval so all users can now see the file
-    if (notif.metadata?.file_id) {
-      await supabase.from('files')
-        .update({
-          pending_approval: false,
-          approval_note:    `${noteHeader}\n${approvalNote.trim()}`,
-          approved_by:      session.user.id,
-          approved_at:      now,
-        })
-        .eq('id', notif.metadata.file_id);
+      // Update file — clear pending_approval so all users can now see it
+      if (notif.metadata?.file_id) {
+        const { error: updateError } = await supabase.from('files')
+          .update({
+            pending_approval: false,
+            approval_note:    `${noteHeader}\n${approvalNote.trim()}`,
+            approved_by:      session.user.id,
+            approved_at:      now,
+          })
+          .eq('id', notif.metadata.file_id);
+        if (updateError) throw updateError;
+      }
+
+      // Mark notification as read
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notif.id);
+      if (notifError) throw notifError;
+
+      setNotifications(notifications.map(n =>
+        n.id === notif.id ? { ...n, read: true } : n
+      ));
+      setApprovingId(null);
+      setApprovalNote('');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
     }
-
-    // Mark notification as read
-    await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', notif.id);
-
-    setNotifications(notifications.map(n =>
-      n.id === notif.id ? { ...n, read: true } : n
-    ));
-    setApprovingId(null);
-    setApprovalNote('');
-  } catch (err: any) {
-    setError(err.message);
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
   const markAllRead = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -105,7 +108,7 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-black text-white">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
       </div>
     </div>
   );
@@ -154,7 +157,7 @@ export default function NotificationsPage() {
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           {!notif.read && (
-                            <span className="h-2 w-2 rounded-full bg-blue-400 shrink-0"></span>
+                            <span className="h-2 w-2 rounded-full bg-blue-400 shrink-0" />
                           )}
                           <p className={`font-medium ${notif.read ? 'text-white/60' : 'text-white'}`}>
                             {notif.title}

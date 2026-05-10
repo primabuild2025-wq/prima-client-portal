@@ -36,9 +36,9 @@ export default function ProjectsPage() {
       setCurrentUser(user);
 
       const { data: projectsData, error: projectsError } = await supabase
-      .from('projects')
-      .select('*, owner:users!owner_id(name, email), tasks(id, status)')
-      .order('created_at', { ascending: false });
+        .from('projects')
+        .select('*, owner:users!owner_id(name, email), tasks(id, status)')
+        .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
       setProjects(projectsData || []);
@@ -89,10 +89,10 @@ export default function ProjectsPage() {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'text-green-400 bg-green-400/10 border-green-400/20';
-      case 'draft': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+      case 'active':    return 'text-green-400 bg-green-400/10 border-green-400/20';
+      case 'draft':     return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
       case 'completed': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      default: return 'text-white/50 bg-white/5 border-white/10';
+      default:          return 'text-white/50 bg-white/5 border-white/10';
     }
   };
 
@@ -150,7 +150,11 @@ export default function ProjectsPage() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {projects.map((project) => (
-                  <div key={project.id} onClick={() => window.location.href = `/projects/${project.id}`} className="cursor-pointer rounded-3xl border border-white/10 bg-black/40 p-6 space-y-3 hover:border-white/20 transition">
+                  <div
+                    key={project.id}
+                    onClick={() => window.location.href = `/projects/${project.id}`}
+                    className="cursor-pointer rounded-3xl border border-white/10 bg-black/40 p-6 space-y-3 hover:border-white/20 transition"
+                  >
                     <div className="flex items-start justify-between">
                       <h3 className="font-semibold text-white">{project.name}</h3>
                       {project.red_flag && <span className="text-red-400 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>}
@@ -171,7 +175,7 @@ export default function ProjectsPage() {
                       </span>
                     </div>
                     {project.owner && <p className="text-xs text-white/40">{t('Owner', 'בעלים')}: {project.owner.name}</p>}
-                    
+
                     {['admin', 'management'].includes(currentUser?.role) && (
                       <div className="mt-4 flex flex-wrap gap-2">
                         <p className="w-full text-xs text-white/50 mb-1">{t('Change Status', 'שנה סטטוס')}</p>

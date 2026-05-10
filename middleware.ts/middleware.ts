@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -25,11 +25,9 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session
   const { data: { user } } = await supabase.auth.getUser();
-console.log('MIDDLEWARE:', request.nextUrl.pathname, user ? 'HAS USER: ' + user.email : 'NO USER');
+  console.log('MIDDLEWARE:', request.nextUrl.pathname, user ? 'HAS USER: ' + user.email : 'NO USER');
 
-  // Redirect to login if accessing protected routes without session
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
