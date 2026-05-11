@@ -437,7 +437,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   : tab === 'paperwork'
                   ? ` ${t('Paperwork', 'ניירת')}${paperworkFiles.length > 0 ? ` (${paperworkFiles.length})` : ''}`
                   : tab === 'checklist'
-                  ? t('Checklist', 'רשימת משימות')
+                  ? t('Mile Stones', 'אבני דרך')
                   : `${t('Work Media', 'מדיית עבודה')}${workMedia.length > 0 ? ` (${workMedia.length})` : ''}`}
               </button>
             ))}

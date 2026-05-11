@@ -2,18 +2,34 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useLang } from '@/lib/context/LanguageContext';
+import { useEffect, useState } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLang();
+  const [role, setRole] = useState<string | null>(null);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from('users').select('role').eq('id', session.user.id).single()
+        .then(({ data }) => setRole(data?.role || null));
+    });
+  }, []);
 
   const navItems = [
     { label: t('Dashboard', 'לוח בקרה'),  href: '/dashboard',     icon: '⬛' },
     { label: t('Projects', 'פרויקטים'),   href: '/projects',      icon: '📁' },
     { label: t('Tasks', 'משימות'),         href: '/tasks',         icon: '✅' },
-    { label: t('Users', 'משתמשים'),        href: '/users',         icon: '👥' },
     { label: t('Notifications', 'התראות'), href: '/notifications', icon: '🔔' },
+    ...(role === 'admin' ? [{ label: t('Users', 'משתמשים'), href: '/admin/users', icon: '👥' }] : []),
   ];
 
   return (
