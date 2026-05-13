@@ -1,5 +1,6 @@
 import './globals.css'
 import { LanguageProvider } from '@/lib/context/LanguageContext'
+import { SidebarProvider } from '@/lib/context/SidebarContext'
 
 export default function RootLayout({
   children,
@@ -10,7 +11,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <LanguageProvider>
-          {children}
+          <SidebarProvider>
+            {children}
+          </SidebarProvider>
         </LanguageProvider>
       </body>
     </html>

@@ -147,7 +147,7 @@ export default function TasksPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
-      <div className="grid grid-cols-[280px_1fr] gap-6 px-6 pb-10 pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 px-4 md:px-6 pb-10 pt-6">
         <Sidebar />
         <section className="space-y-6">
           <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">

@@ -219,7 +219,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
-      <div className="grid grid-cols-[280px_1fr] gap-6 px-6 pb-10 pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 px-4 md:px-6 pb-10 pt-6">
         <Sidebar />
         <section className="space-y-6">
 
@@ -297,7 +297,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
                   activeTab === tab ? 'bg-white text-black' : 'border border-white/10 text-white hover:bg-white/10'
                 }`}>
                 {tab === 'photos'
-                  ? `${t('Photos', 'תמונות')} (${photos.length + videoFiles.length})`
+                  ? `${t('Media', 'מדיה')} (${photos.length + videoFiles.length})`
                   : tab === 'files'
                   ? `${t('Files', 'קבצים')} (${pdfFiles.length})`
                   : tab === 'notes'
