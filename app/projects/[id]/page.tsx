@@ -66,7 +66,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [showUpload, setShowUpload]   = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Work Media state
   const [workMedia, setWorkMedia]               = useState<{ category: string; url: string; name: string; path: string }[]>([]);
   const [loadingMedia, setLoadingMedia]         = useState(false);
   const [showMediaUpload, setShowMediaUpload]   = useState(false);
@@ -78,7 +77,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [mediaSuccess, setMediaSuccess]         = useState(false);
   const fileInputRef                            = useRef<HTMLInputElement>(null);
 
-  // Paperwork state
   const [showPaperworkUpload, setShowPaperworkUpload]   = useState(false);
   const [paperworkDescription, setPaperworkDescription] = useState('');
   const [paperworkFile, setPaperworkFile]               = useState<File | null>(null);
@@ -97,10 +95,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   );
 
   useEffect(() => { loadData(); }, []);
-
-  useEffect(() => {
-    if (activeTab === 'workmedia') loadWorkMedia();
-  }, [activeTab]);
+  useEffect(() => { if (activeTab === 'workmedia') loadWorkMedia(); }, [activeTab]);
 
   const loadData = async () => {
     try {
@@ -202,14 +197,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   };
 
   const handlePaperworkUpload = async () => {
-    if (!paperworkDescription.trim()) {
-      setPaperworkError(t('Description is required.', 'תיאור הוא שדה חובה.'));
-      return;
-    }
-    if (!paperworkFile) {
-      setPaperworkError(t('Please select a file.', 'אנא בחר קובץ.'));
-      return;
-    }
+    if (!paperworkDescription.trim()) { setPaperworkError(t('Description is required.', 'תיאור הוא שדה חובה.')); return; }
+    if (!paperworkFile)               { setPaperworkError(t('Please select a file.', 'אנא בחר קובץ.')); return; }
     setUploadingPaperwork(true);
     setPaperworkError(null);
     try {
@@ -275,20 +264,20 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     }
   };
 
-  const pdfFiles      = files.filter(f => f.mime_type === 'application/pdf' && f.file_type !== 'paperwork');
-  const videoFiles    = files.filter(f => f.mime_type?.startsWith('video/'));
+  const pdfFiles       = files.filter(f => f.mime_type === 'application/pdf' && f.file_type !== 'paperwork');
+  const videoFiles     = files.filter(f => f.mime_type?.startsWith('video/'));
   const paperworkFiles = files.filter(f => f.file_type === 'paperwork');
-  const isVideo       = (name: string) => /\.(mp4|mov|avi|webm|mkv)$/i.test(name);
+  const isVideo        = (name: string) => /\.(mp4|mov|avi|webm|mkv)$/i.test(name);
 
   const statusColor = (status: string) => {
-    switch (status) {
-      case 'in_progress': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      case 'completed':   return 'text-green-400 bg-green-400/10 border-green-400/20';
-      case 'not_started': return 'text-white/50 bg-white/5 border-white/10';
-      case 'blocked':     return 'text-red-400 bg-red-400/10 border-red-400/20';
-      default:            return 'text-white/50 bg-white/5 border-white/10';
-    }
-  };
+  switch (status) {
+    case 'in_progress': return 'text-blue-700 bg-blue-50 border-blue-200';
+    case 'completed':   return 'text-green-700 bg-green-50 border-green-200';
+    case 'not_started': return 'text-gray-500 bg-gray-100 border-gray-200';
+    case 'blocked':     return 'text-red-600 bg-red-50 border-red-200';
+    default:            return 'text-gray-500 bg-gray-100 border-gray-200';
+  }
+};
 
   const statusLabel = (status: string) => {
     switch (status) {
@@ -301,6 +290,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       default:            return status;
     }
   };
+
+  const projectStatusColor = (status: string) => {
+  switch (status) {
+    case 'active':    return 'text-green-700 bg-green-50 border-green-200';
+    case 'completed': return 'text-blue-700 bg-blue-50 border-blue-200';
+    default:          return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+  }
+};
 
   const updateStatus = async (newStatus: string) => {
     try {
@@ -316,71 +313,65 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
       </div>
     </div>
   );
 
   if (error || !project) return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <p className="text-red-400">{error || t('Project not found', 'פרויקט לא נמצא')}</p>
+        <p className="text-status-error">{error || t('Project not found', 'פרויקט לא נמצא')}</p>
       </div>
     </div>
   );
 
   const isPrivileged = ['admin', 'management'].includes(currentUser?.role);
-
   const mediaByCategory = MEDIA_CATEGORIES.reduce((acc, cat) => {
     acc[cat] = workMedia.filter(m => m.category === cat);
     return acc;
   }, {} as Record<string, typeof workMedia>);
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 px-4 md:px-6 pb-10 pt-6">
-
         <Sidebar />
         <section className="space-y-6">
 
           {/* Project Header */}
-          <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+          <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
             <div className="flex items-start justify-between">
               <div>
                 <button
                   onClick={() => window.location.href = '/projects'}
-                  className="text-white/50 hover:text-white text-sm"
+                  className="text-gray-400 hover:text-[#11144C] text-sm transition"
                 >
                   ← {t('Projects', 'פרויקטים')}
                 </button>
-                <h1 className="mt-2 text-2xl font-semibold">{project.name}</h1>
+                <h1 className="mt-2 text-2xl font-semibold text-gray-900">{project.name}</h1>
                 {project.description && (
-                  <p className="mt-1 text-white/60">{project.description}</p>
+                  <p className="mt-1 text-gray-500">{project.description}</p>
                 )}
                 <div className="mt-3 flex items-center gap-3">
-                  <span className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                    project.status === 'active'    ? 'text-green-400 bg-green-400/10 border-green-400/20' :
-                    project.status === 'completed' ? 'text-blue-400 bg-blue-400/10 border-blue-400/20' :
-                                                     'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'
-                  }`}>
+                  <span className={`rounded-full border px-3 py-1 text-xs font-medium ${projectStatusColor(project.status)}`}>
                     {statusLabel(project.status)}
                   </span>
                   {project.red_flag && (
-                    <span className="text-red-400 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>
+                    <span className="text-red-500 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>
                   )}
                   {project.box_folder_id && (
-                    <span className="text-white/30 text-xs">📦 {t('Box connected', 'Box מחובר')}</span>
+                    <span className="text-gray-400 text-xs">📦 {t('Box connected', 'Box מחובר')}</span>
                   )}
                 </div>
 
                 {isPrivileged && (
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <p className="w-full text-xs text-white/50 mb-1">{t('Change Status', 'שנה סטטוס')}</p>
+                    <p className="w-full text-xs text-gray-400 mb-1">{t('Change Status', 'שנה סטטוס')}</p>
                     {['draft', 'active', 'completed'].map(status => (
                       <button
                         key={status}
@@ -388,10 +379,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         onClick={() => updateStatus(status)}
                         className={`rounded-full border px-4 py-2 text-xs font-medium transition ${
                           project.status === status
-                            ? status === 'active'    ? 'text-green-400 bg-green-400/10 border-green-400/20' :
-                              status === 'completed' ? 'text-blue-400 bg-blue-400/10 border-blue-400/20' :
-                                                       'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'
-                            : 'border-white/10 text-white/50 hover:bg-white/10'
+                            ? projectStatusColor(status)
+                            : 'border-gray-200 text-gray-400 hover:bg-[#11144C]/5 hover:border-[#11144C]/30'
                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {statusLabel(status)}
@@ -403,14 +392,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
               <button
                 onClick={() => setShowUpload(!showUpload)}
-                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition"
+                className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
               >
                 + {t('Upload', 'העלה')}
               </button>
             </div>
 
             {showUpload && (
-              <div className="mt-6 rounded-3xl border border-white/10 bg-black/40 p-6">
+              <div className="mt-6 rounded-2xl border border-gray-200 bg-[#F5F6FA] p-6">
                 <MediaUpload
                   projectId={id}
                   onUploadComplete={() => { loadData(); setShowUpload(false); }}
@@ -426,7 +415,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`rounded-full px-5 py-2 text-sm font-medium transition ${
-                  activeTab === tab ? 'bg-white text-black' : 'border border-white/10 text-white hover:bg-white/10'
+                  activeTab === tab
+                    ? 'bg-[#11144C] text-white'
+                    : 'border border-gray-200 text-gray-600 hover:bg-[#11144C]/5 hover:border-[#11144C]/30'
                 }`}
               >
                 {tab === 'tasks'
@@ -436,7 +427,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   : tab === 'files'
                   ? `${t('Files', 'קבצים')} (${pdfFiles.length})`
                   : tab === 'paperwork'
-                  ? ` ${t('Paperwork', 'ניירת')}${paperworkFiles.length > 0 ? ` (${paperworkFiles.length})` : ''}`
+                  ? `${t('Paperwork', 'ניירת')}${paperworkFiles.length > 0 ? ` (${paperworkFiles.length})` : ''}`
                   : tab === 'checklist'
                   ? t('Mile Stones', 'אבני דרך')
                   : `${t('Work Media', 'מדיית עבודה')}${workMedia.length > 0 ? ` (${workMedia.length})` : ''}`}
@@ -446,26 +437,26 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8 space-y-3">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8 space-y-3">
               {tasks.length === 0 ? (
-                <p className="text-center text-white/50 py-8">{t('No tasks yet.', 'אין משימות עדיין.')}</p>
+                <p className="text-center text-gray-400 py-8">{t('No tasks yet.', 'אין משימות עדיין.')}</p>
               ) : tasks.map(task => (
                 <div
                   key={task.id}
                   onClick={() => window.location.href = `/projects/${id}/tasks/${task.id}`}
-                  className="rounded-3xl border border-white/10 bg-black/40 p-5 flex items-center justify-between cursor-pointer hover:bg-white/5 transition"
+                  className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 flex items-center justify-between cursor-pointer hover:border-[#11144C]/30 hover:bg-[#11144C]/5 transition"
                 >
                   <div>
-                    <p className="font-medium">{task.title}</p>
+                    <p className="font-medium text-gray-900">{task.title}</p>
                     {task.assignee && (
-                      <p className="text-xs text-white/40 mt-1">👤 {task.assignee.name}</p>
+                      <p className="text-xs text-gray-400 mt-1">👤 {task.assignee.name}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusColor(task.status)}`}>
                       {statusLabel(task.status)}
                     </span>
-                    <span className="text-white/30 text-xs">→</span>
+                    <span className="text-gray-400 text-xs">→</span>
                   </div>
                 </div>
               ))}
@@ -474,9 +465,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
           {/* Photos Tab */}
           {activeTab === 'photos' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
               {photos.length === 0 && videoFiles.length === 0 ? (
-                <p className="text-center text-white/50 py-8">
+                <p className="text-center text-gray-400 py-8">
                   {t('No photos yet. Click Upload to add photos.', 'אין תמונות עדיין. לחץ על העלה להוספת תמונות.')}
                 </p>
               ) : (
@@ -518,40 +509,40 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
           {/* Files Tab */}
           {activeTab === 'files' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8 space-y-3">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8 space-y-3">
               {pdfFiles.length === 0 ? (
-                <p className="text-center text-white/50 py-8">
+                <p className="text-center text-gray-400 py-8">
                   {t('No files yet. Click Upload to add files.', 'אין קבצים עדיין. לחץ על העלה להוספת קבצים.')}
                 </p>
               ) : pdfFiles.map(file => (
-                <div key={file.id} className="rounded-3xl border border-white/10 bg-black/40 p-5 space-y-3">
+                <div key={file.id} className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{file.description}</p>
+                      <p className="font-medium text-gray-900">{file.description}</p>
                       {file.category && (
-                        <span className="inline-block mt-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/50">
+                        <span className="inline-block mt-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
                           {file.category}
                         </span>
                       )}
-                      <p className="text-xs text-white/40 mt-1">{file.mime_type} · {(file.size / 1024).toFixed(1)} KB</p>
+                      <p className="text-xs text-gray-400 mt-1">{file.mime_type} · {(file.size / 1024).toFixed(1)} KB</p>
                       {file.pending_approval && !file.approval_note && isPrivileged && (
-                        <p className="text-xs text-amber-400 mt-1">⏳ {t('Waiting for approval', 'ממתין לאישור')}</p>
+                        <p className="text-xs text-amber-600 mt-1">⏳ {t('Waiting for approval', 'ממתין לאישור')}</p>
                       )}
                       {file.approval_note && (
-                        <p className="text-xs text-green-400/70 mt-1">
+                        <p className="text-xs text-green-600 mt-1">
                           ✓ {t('Approved', 'אושר')} · {file.approval_note.split('\n')[0].replace(/[\[\]]/g, '')}
                         </p>
                       )}
                     </div>
                     {file.red_flag && (
-                      <span className="text-red-400 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>
+                      <span className="text-red-500 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>
                     )}
                   </div>
                   {isPrivileged && (
                     <button
                       onClick={() => handleDeleteFile(file.id)}
                       disabled={deletingId === file.id}
-                      className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-400 hover:bg-red-500/20 transition disabled:opacity-50"
+                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs text-red-500 hover:bg-red-100 transition disabled:opacity-50"
                     >
                       {deletingId === file.id ? '…' : t('Delete', 'מחק')}
                     </button>
@@ -565,16 +556,16 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
           {/* Paperwork Tab */}
           {activeTab === 'paperwork' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8 space-y-4">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold">📄 {t('Paperwork', 'ניירת')}</h2>
-                  <p className="text-sm text-white/50 mt-0.5">{t('Contracts, permits, and other documents', 'חוזים, היתרים ומסמכים אחרים')}</p>
+                  <h2 className="text-lg font-semibold text-gray-900">📄 {t('Paperwork', 'ניירת')}</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">{t('Contracts, permits, and other documents', 'חוזים, היתרים ומסמכים אחרים')}</p>
                 </div>
                 {isPrivileged && (
                   <button
                     onClick={() => { setShowPaperworkUpload(true); setPaperworkDescription(''); setPaperworkFile(null); setPaperworkError(null); setPaperworkSuccess(false); }}
-                    className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition"
+                    className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
                   >
                     + {t('Upload', 'העלה')}
                   </button>
@@ -582,25 +573,25 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               </div>
 
               {paperworkFiles.length === 0 ? (
-                <div className="rounded-3xl border border-white/10 bg-black/40 p-10 text-center">
-                  <p className="text-white/50 mb-4">{t('No paperwork yet.', 'אין ניירת עדיין.')}</p>
+                <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-10 text-center">
+                  <p className="text-gray-400 mb-4">{t('No paperwork yet.', 'אין ניירת עדיין.')}</p>
                   {isPrivileged && (
                     <button
                       onClick={() => { setShowPaperworkUpload(true); setPaperworkDescription(''); setPaperworkFile(null); setPaperworkError(null); setPaperworkSuccess(false); }}
-                      className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition"
+                      className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
                     >
                       + {t('Upload first document', 'העלה מסמך ראשון')}
                     </button>
                   )}
                 </div>
               ) : paperworkFiles.map(file => (
-                <div key={file.id} className="rounded-3xl border border-white/10 bg-black/40 p-5 space-y-3">
+                <div key={file.id} className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{file.description}</p>
-                      <p className="text-xs text-white/40 mt-1">{file.mime_type} · {(file.size / 1024).toFixed(1)} KB</p>
+                      <p className="font-medium text-gray-900">{file.description}</p>
+                      <p className="text-xs text-gray-400 mt-1">{file.mime_type} · {(file.size / 1024).toFixed(1)} KB</p>
                       {file.uploaded_at && (
-                        <p className="text-xs text-white/30 mt-0.5">
+                        <p className="text-xs text-gray-400 mt-0.5">
                           🕐 {new Date(file.uploaded_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       )}
@@ -610,7 +601,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <button
                       onClick={() => handleDeleteFile(file.id)}
                       disabled={deletingId === file.id}
-                      className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-400 hover:bg-red-500/20 transition disabled:opacity-50"
+                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs text-red-500 hover:bg-red-100 transition disabled:opacity-50"
                     >
                       {deletingId === file.id ? '…' : t('Delete', 'מחק')}
                     </button>
@@ -624,22 +615,22 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
           {/* Checklist Tab */}
           {activeTab === 'checklist' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
               <ProjectChecklist projectId={id} isPrivileged={isPrivileged} />
             </div>
           )}
 
           {/* Work Media Tab */}
           {activeTab === 'workmedia' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8 space-y-8">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8 space-y-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold">📷 {t('Work Media', 'מדיית עבודה')}</h2>
-                  <p className="text-sm text-white/50 mt-0.5">{t('Site photos and videos by category', 'תמונות וסרטונים מהאתר לפי קטגוריה')}</p>
+                  <h2 className="text-lg font-semibold text-gray-900">📷 {t('Work Media', 'מדיית עבודה')}</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">{t('Site photos and videos by category', 'תמונות וסרטונים מהאתר לפי קטגוריה')}</p>
                 </div>
                 <button
                   onClick={() => { setShowMediaUpload(true); setMediaCategory(''); setMediaDescription(''); setMediaFiles(null); setMediaError(null); setMediaSuccess(false); }}
-                  className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition"
+                  className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
                 >
                   + {t('Upload', 'העלה')}
                 </button>
@@ -647,14 +638,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
               {loadingMedia ? (
                 <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#11144C]" />
                 </div>
               ) : workMedia.length === 0 ? (
-                <div className="rounded-3xl border border-white/10 bg-black/40 p-10 text-center">
-                  <p className="text-white/50 mb-4">{t('No work media yet.', 'אין מדיית עבודה עדיין.')}</p>
+                <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-10 text-center">
+                  <p className="text-gray-400 mb-4">{t('No work media yet.', 'אין מדיית עבודה עדיין.')}</p>
                   <button
                     onClick={() => { setShowMediaUpload(true); setMediaCategory(''); setMediaDescription(''); setMediaFiles(null); setMediaError(null); setMediaSuccess(false); }}
-                    className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition"
+                    className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
                   >
                     + {t('Upload first media', 'העלה מדיה ראשונה')}
                   </button>
@@ -666,15 +657,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   return (
                     <div key={category} className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <h3 className="text-sm font-semibold text-white/80">{category}</h3>
-                        <span className="text-xs text-white/30 bg-white/5 rounded-full px-2 py-0.5">{items.length}</span>
-                        <div className="flex-1 h-px bg-white/10" />
+                        <h3 className="text-sm font-semibold text-gray-700">{category}</h3>
+                        <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">{items.length}</span>
+                        <div className="flex-1 h-px bg-gray-200" />
                       </div>
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                         {items.map(item => {
                           const { displayName, description, uploadedAt } = parseMediaFilename(item.name);
                           return (
-                            <div key={item.path} className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                            <div key={item.path} className="relative group rounded-2xl overflow-hidden border border-gray-200 bg-white">
                               {isVideo(item.name) ? (
                                 <video src={item.url} controls className="w-full aspect-square object-cover" />
                               ) : (
@@ -684,9 +675,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                 </a>
                               )}
                               <div className="px-2 py-2 space-y-0.5">
-                                {description && <p className="text-xs text-white/80 font-medium truncate">{description}</p>}
-                                {uploadedAt && <p className="text-xs text-white/30">🕐 {uploadedAt}</p>}
-                                {!description && !uploadedAt && <p className="text-xs text-white/40 truncate">{displayName}</p>}
+                                {description && <p className="text-xs text-gray-900 font-medium truncate">{description}</p>}
+                                {uploadedAt  && <p className="text-xs text-gray-400">🕐 {uploadedAt}</p>}
+                                {!description && !uploadedAt && <p className="text-xs text-gray-400 truncate">{displayName}</p>}
                               </div>
                               {isPrivileged && (
                                 <button
@@ -712,47 +703,61 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       {/* Work Media Upload Modal */}
       {showMediaUpload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#11144C] p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-gray-200 shadow-2xl p-8 space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">📷 {t('Upload Work Media', 'העלאת מדיית עבודה')}</h3>
-              <button onClick={() => setShowMediaUpload(false)} className="text-white/40 hover:text-white transition text-lg">✕</button>
+              <h3 className="text-xl font-semibold text-gray-900">📷 {t('Upload Work Media', 'העלאת מדיית עבודה')}</h3>
+              <button onClick={() => setShowMediaUpload(false)} className="text-gray-400 hover:text-gray-900 transition text-lg">✕</button>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">{t('Category', 'קטגוריה')}</label>
-              <select value={mediaCategory} onChange={(e) => setMediaCategory(e.target.value)}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white">
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Category', 'קטגוריה')}</label>
+              <select
+                value={mediaCategory}
+                onChange={(e) => setMediaCategory(e.target.value)}
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30"
+              >
                 <option value="">{t('Select a category...', 'בחר קטגוריה...')}</option>
                 {MEDIA_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">
-                {t('Description', 'תיאור')} <span className="text-white/30 font-normal">({t('optional', 'אופציונלי')})</span>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                {t('Description', 'תיאור')} <span className="text-gray-400 font-normal">({t('optional', 'אופציונלי')})</span>
               </label>
-              <input type="text" value={mediaDescription} onChange={(e) => setMediaDescription(e.target.value)}
+              <input
+                type="text"
+                value={mediaDescription}
+                onChange={(e) => setMediaDescription(e.target.value)}
                 placeholder={t('e.g. Before waterproofing', 'לדוג. לפני איטום')}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white placeholder:text-white/30" />
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400"
+              />
             </div>
             <div>
               <input ref={fileInputRef} type="file" multiple accept="image/*,video/*" className="hidden"
                 onChange={(e) => setMediaFiles(e.target.files)} />
-              <button onClick={() => fileInputRef.current?.click()}
-                className="w-full rounded-3xl border-2 border-dashed border-white/20 bg-black/30 px-4 py-6 text-sm text-white/60 hover:border-white/40 hover:text-white/80 transition text-center">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full rounded-2xl border-2 border-dashed border-gray-300 bg-[#F5F6FA] px-4 py-6 text-sm text-gray-400 hover:border-[#11144C]/30 hover:text-gray-600 transition text-center"
+              >
                 {mediaFiles && mediaFiles.length > 0
                   ? `✅ ${mediaFiles.length} ${t('file(s) selected', 'קבצים נבחרו')}`
                   : `⬆️ ${t('Click to select photos or videos', 'לחץ לבחירת תמונות או סרטונים')}`}
               </button>
             </div>
-            {mediaError   && <p className="text-sm text-red-400">{mediaError}</p>}
-            {mediaSuccess && <p className="text-sm text-green-400">✅ {t('Uploaded successfully!', 'הועלה בהצלחה!')}</p>}
+            {mediaError   && <p className="text-sm text-red-500">{mediaError}</p>}
+            {mediaSuccess && <p className="text-sm text-green-600">✅ {t('Uploaded successfully!', 'הועלה בהצלחה!')}</p>}
             <div className="flex gap-3 pt-1">
-              <button onClick={() => setShowMediaUpload(false)}
-                className="flex-1 rounded-full border border-white/10 px-5 py-3 text-sm text-white hover:bg-white/10 transition">
+              <button
+                onClick={() => setShowMediaUpload(false)}
+                className="flex-1 rounded-full border border-gray-200 px-5 py-3 text-sm text-gray-600 hover:bg-gray-100 transition"
+              >
                 {t('Cancel', 'ביטול')}
               </button>
-              <button onClick={handleMediaUpload} disabled={uploadingMedia}
-                className="flex-1 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-slate-200 transition disabled:opacity-50">
+              <button
+                onClick={handleMediaUpload}
+                disabled={uploadingMedia}
+                className="flex-1 rounded-full bg-[#11144C] px-5 py-3 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition disabled:opacity-50"
+              >
                 {uploadingMedia ? t('Uploading...', 'מעלה...') : t('Upload', 'העלה')}
               </button>
             </div>
@@ -762,16 +767,16 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       {/* Paperwork Upload Modal */}
       {showPaperworkUpload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#11144C] p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-gray-200 shadow-2xl p-8 space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">📄 {t('Upload Paperwork', 'העלאת ניירת')}</h3>
-              <button onClick={() => setShowPaperworkUpload(false)} className="text-white/40 hover:text-white transition text-lg">✕</button>
+              <h3 className="text-xl font-semibold text-gray-900">📄 {t('Upload Paperwork', 'העלאת ניירת')}</h3>
+              <button onClick={() => setShowPaperworkUpload(false)} className="text-gray-400 hover:text-gray-900 transition text-lg">✕</button>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">
-                {t('Description', 'תיאור')} <span className="text-red-400">*</span>{' '}
-                <span className="text-white/30 font-normal">({t('max 20 chars', 'עד 20 תווים')})</span>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                {t('Description', 'תיאור')} <span className="text-red-500">*</span>{' '}
+                <span className="text-gray-400 font-normal">({t('max 20 chars', 'עד 20 תווים')})</span>
               </label>
               <input
                 type="text"
@@ -779,40 +784,52 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 onChange={(e) => setPaperworkDescription(e.target.value.substring(0, 20))}
                 placeholder={t('e.g. Building permit', 'לדוג. היתר בנייה')}
                 maxLength={20}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white placeholder:text-white/30"
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400"
               />
-              <p className="mt-1 text-right text-xs text-white/30">{paperworkDescription.length}/20</p>
+              <p className="mt-1 text-right text-xs text-gray-400">{paperworkDescription.length}/20</p>
             </div>
             <div>
-              <input ref={paperworkInputRef} type="file"
+              <input
+                ref={paperworkInputRef}
+                type="file"
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*"
                 className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) setPaperworkFile(f); }} />
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) setPaperworkFile(f); }}
+              />
               {!paperworkFile ? (
-                <button onClick={() => paperworkInputRef.current?.click()}
-                  className="w-full rounded-3xl border-2 border-dashed border-white/20 bg-black/30 px-4 py-6 text-sm text-white/60 hover:border-white/40 hover:text-white/80 transition text-center">
+                <button
+                  onClick={() => paperworkInputRef.current?.click()}
+                  className="w-full rounded-2xl border-2 border-dashed border-gray-300 bg-[#F5F6FA] px-4 py-6 text-sm text-gray-400 hover:border-[#11144C]/30 hover:text-gray-600 transition text-center"
+                >
                   ⬆️ {t('Click to select a file', 'לחץ לבחירת קובץ')}
                 </button>
               ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 flex items-center justify-between">
+                <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-white">📄 {paperworkFile.name}</p>
-                    <p className="text-xs text-white/40 mt-0.5">{(paperworkFile.size / 1024).toFixed(1)} KB</p>
+                    <p className="text-sm font-medium text-gray-900">📄 {paperworkFile.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{(paperworkFile.size / 1024).toFixed(1)} KB</p>
                   </div>
-                  <button onClick={() => { setPaperworkFile(null); if (paperworkInputRef.current) paperworkInputRef.current.value = ''; }}
-                    className="text-white/30 hover:text-white text-lg leading-none transition">✕</button>
+                  <button
+                    onClick={() => { setPaperworkFile(null); if (paperworkInputRef.current) paperworkInputRef.current.value = ''; }}
+                    className="text-gray-400 hover:text-gray-700 text-lg leading-none transition"
+                  >✕</button>
                 </div>
               )}
             </div>
-            {paperworkError   && <p className="text-sm text-red-400">{paperworkError}</p>}
-            {paperworkSuccess && <p className="text-sm text-green-400">✅ {t('Uploaded successfully!', 'הועלה בהצלחה!')}</p>}
+            {paperworkError   && <p className="text-sm text-red-500">{paperworkError}</p>}
+            {paperworkSuccess && <p className="text-sm text-green-600">✅ {t('Uploaded successfully!', 'הועלה בהצלחה!')}</p>}
             <div className="flex gap-3 pt-1">
-              <button onClick={() => setShowPaperworkUpload(false)}
-                className="flex-1 rounded-full border border-white/10 px-5 py-3 text-sm text-white hover:bg-white/10 transition">
+              <button
+                onClick={() => setShowPaperworkUpload(false)}
+                className="flex-1 rounded-full border border-gray-200 px-5 py-3 text-sm text-gray-600 hover:bg-gray-100 transition"
+              >
                 {t('Cancel', 'ביטול')}
               </button>
-              <button onClick={handlePaperworkUpload} disabled={uploadingPaperwork}
-                className="flex-1 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-slate-200 transition disabled:opacity-50">
+              <button
+                onClick={handlePaperworkUpload}
+                disabled={uploadingPaperwork}
+                className="flex-1 rounded-full bg-[#11144C] px-5 py-3 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition disabled:opacity-50"
+              >
                 {uploadingPaperwork ? t('Uploading...', 'מעלה...') : t('Upload', 'העלה')}
               </button>
             </div>

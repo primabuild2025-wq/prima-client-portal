@@ -23,9 +23,7 @@ export default function ProjectsPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
@@ -89,10 +87,10 @@ export default function ProjectsPage() {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case 'active':    return 'text-green-400 bg-green-400/10 border-green-400/20';
-      case 'draft':     return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
-      case 'completed': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      default:          return 'text-white/50 bg-white/5 border-white/10';
+      case 'active':    return 'text-status-success bg-green-50 border-green-200';
+      case 'draft':     return 'text-status-warning bg-yellow-50 border-yellow-200';
+      case 'completed': return 'text-status-info bg-blue-50 border-blue-200';
+      default:          return 'text-text-secondary bg-gray-100 border-border';
     }
   };
 
@@ -106,43 +104,44 @@ export default function ProjectsPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-bg-page">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-bg-page">
       <Header />
-      <div className="grid grid-cols-[280px_1fr] gap-6 px-6 pb-10 pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 px-4 md:px-6 pb-10 pt-6">
         <Sidebar />
         <section className="space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+          <div className="rounded-3xl bg-bg-card border border-border shadow-sm p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold">{t('Projects', 'פרויקטים')}</h2>
-                <p className="text-sm text-white/70">{t('Manage and track all projects.', 'נהל ועקוב אחר כל הפרויקטים.')}</p>
+                <h2 className="text-xl font-semibold text-text-primary">{t('Projects', 'פרויקטים')}</h2>
+                <p className="text-sm text-text-secondary">{t('Manage and track all projects.', 'נהל ועקוב אחר כל הפרויקטים.')}</p>
               </div>
               {['admin', 'management'].includes(currentUser?.role) && (
                 <button
                   onClick={() => setShowModal(true)}
-                  className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition"
+                  className="rounded-full bg-accent text-accent-text px-5 py-2 text-sm font-semibold hover:opacity-90 transition"
                 >
                   {t('+ New Project', '+ פרויקט חדש')}
                 </button>
               )}
             </div>
 
-            {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
+            {error && <p className="mb-4 text-sm text-status-error">{error}</p>}
 
             {projects.length === 0 ? (
-              <div className="rounded-3xl border border-white/10 bg-black/40 p-10 text-center">
-                <p className="text-white/50">{t('No projects yet.', 'אין פרויקטים עדיין.')}</p>
+              <div className="rounded-2xl border border-border bg-bg-page p-10 text-center">
+                <p className="text-text-secondary">{t('No projects yet.', 'אין פרויקטים עדיין.')}</p>
                 {['admin', 'management'].includes(currentUser?.role) && (
-                  <button onClick={() => setShowModal(true)} className="mt-4 rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition">
+                  <button onClick={() => setShowModal(true)}
+                    className="mt-4 rounded-full bg-accent text-accent-text px-5 py-2 text-sm font-semibold hover:opacity-90 transition">
                     {t('Create your first project', 'צור את הפרויקט הראשון שלך')}
                   </button>
                 )}
@@ -153,41 +152,45 @@ export default function ProjectsPage() {
                   <div
                     key={project.id}
                     onClick={() => window.location.href = `/projects/${project.id}`}
-                    className="cursor-pointer rounded-3xl border border-white/10 bg-black/40 p-6 space-y-3 hover:border-white/20 transition"
+                    className="cursor-pointer rounded-2xl border border-border bg-bg-page p-6 space-y-3 hover:border-accent/30 hover:shadow-md transition"
                   >
                     <div className="flex items-start justify-between">
-                      <h3 className="font-semibold text-white">{project.name}</h3>
-                      {project.red_flag && <span className="text-red-400 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>}
+                      <h3 className="font-semibold text-text-primary">{project.name}</h3>
+                      {project.red_flag && <span className="text-status-error text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>}
                     </div>
-                    {project.description && <p className="text-sm text-white/60 line-clamp-2">{project.description}</p>}
+                    {project.description && (
+                      <p className="text-sm text-text-secondary line-clamp-2">{project.description}</p>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusColor(project.status)}`}>
                         {statusLabel(project.status)}
                       </span>
-                      <span className="text-xs text-white/40">{new Date(project.created_at).toLocaleDateString()}</span>
+                      <span className="text-xs text-text-secondary">{new Date(project.created_at).toLocaleDateString()}</span>
                     </div>
-                    <div className="flex gap-3 mt-1">
-                      <span className="text-xs text-white/40">
+                    <div className="flex gap-3">
+                      <span className="text-xs text-text-secondary">
                         🔲 {t('Not started', 'לא התחיל')}: {(project.tasks || []).filter((tk: any) => tk.status === 'not_started').length}
                       </span>
-                      <span className="text-xs text-amber-400/70">
+                      <span className="text-xs text-status-warning">
                         ⚡ {t('In progress', 'בתהליך')}: {(project.tasks || []).filter((tk: any) => tk.status === 'in_progress').length}
                       </span>
                     </div>
-                    {project.owner && <p className="text-xs text-white/40">{t('Owner', 'בעלים')}: {project.owner.name}</p>}
+                    {project.owner && (
+                      <p className="text-xs text-text-secondary">{t('Owner', 'בעלים')}: {project.owner.name}</p>
+                    )}
 
                     {['admin', 'management'].includes(currentUser?.role) && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <p className="w-full text-xs text-white/50 mb-1">{t('Change Status', 'שנה סטטוס')}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <p className="w-full text-xs text-text-secondary mb-1">{t('Change Status', 'שנה סטטוס')}</p>
                         {['draft', 'active', 'completed'].map(status => (
                           <button
                             key={status}
                             disabled={project.status === status}
                             onClick={(e) => { e.stopPropagation(); updateStatus(project.id, status); }}
-                            className={`rounded-full border px-4 py-2 text-xs font-medium transition capitalize ${
+                            className={`rounded-full border px-3 py-1 text-xs font-medium transition capitalize ${
                               project.status === status
                                 ? statusColor(status)
-                                : 'border-white/10 text-white/50 hover:bg-white/10'
+                                : 'border-border text-text-secondary hover:bg-bg-card'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             {statusLabel(status)}
@@ -203,7 +206,7 @@ export default function ProjectsPage() {
                     />
 
                     {project.box_folder_id && (
-                      <p className="text-xs text-white/30">📦 {t('Box connected', 'Box מחובר')}</p>
+                      <p className="text-xs text-gray-400">📦 {t('Box connected', 'Box מחובר')}</p>
                     )}
                   </div>
                 ))}
@@ -215,38 +218,38 @@ export default function ProjectsPage() {
 
       {/* Create Project Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#11144C] p-8 shadow-2xl">
-            <h3 className="mb-6 text-xl font-semibold">{t('New Project', 'פרויקט חדש')}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-gray-200 shadow-2xl p-8">
+            <h3 className="mb-6 text-xl font-semibold text-gray-900">{t('New Project', 'פרויקט חדש')}</h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">{t('Project Name *', 'שם הפרויקט *')}</label>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Project Name *', 'שם הפרויקט *')}</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white"
+                  className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C] focus:ring-1 focus:ring-[#11144C]"
                   placeholder={t('Enter project name', 'הכנס שם פרויקט')}
                   required
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">{t('Description', 'תיאור')}</label>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Description', 'תיאור')}</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white resize-none"
+                  className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C] focus:ring-1 focus:ring-[#11144C] resize-none"
                   placeholder={t('Optional description', 'תיאור אופציונלי')}
                   rows={3}
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 rounded-full border border-white/10 px-5 py-3 text-sm text-white hover:bg-white/10 transition">
+                  className="flex-1 rounded-full border border-gray-200 px-5 py-3 text-sm text-gray-600 hover:bg-gray-50 transition">
                   {t('Cancel', 'ביטול')}
                 </button>
                 <button type="submit" disabled={submitting}
-                  className="flex-1 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-slate-200 transition disabled:opacity-50">
+                  className="flex-1 rounded-full bg-[#11144C] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1a1f6e] transition disabled:opacity-50">
                   {submitting ? t('Creating...', 'יוצר...') : t('Create Project', 'צור פרויקט')}
                 </button>
               </div>

@@ -91,13 +91,11 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
           .select('*, project:projects(name, id), assignee:users!assignee_id(name, email), creator:users!created_by(name)')
           .eq('id', id).single(),
         isPrivileged
-          ? supabase.from('files').select('*').eq('task_id', id)
-              .order('created_at', { ascending: false })
+          ? supabase.from('files').select('*').eq('task_id', id).order('created_at', { ascending: false })
           : supabase.from('files').select('*').eq('task_id', id)
               .or('pending_approval.eq.false,pending_approval.is.null')
               .order('created_at', { ascending: false }),
-        supabase.from('photos').select('*').eq('task_id', id)
-          .order('created_at', { ascending: false }),
+        supabase.from('photos').select('*').eq('task_id', id).order('created_at', { ascending: false }),
       ]);
 
       setTask(taskRes.data);
@@ -174,11 +172,11 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case 'in_progress': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      case 'completed':   return 'text-green-400 bg-green-400/10 border-green-400/20';
-      case 'not_started': return 'text-white/50 bg-white/5 border-white/10';
-      case 'blocked':     return 'text-red-400 bg-red-400/10 border-red-400/20';
-      default:            return 'text-white/50 bg-white/5 border-white/10';
+      case 'in_progress': return 'text-blue-700 bg-blue-50 border-blue-200';
+      case 'completed':   return 'text-green-700 bg-green-50 border-green-200';
+      case 'not_started': return 'text-gray-500 bg-gray-100 border-gray-200';
+      case 'blocked':     return 'text-red-600 bg-red-50 border-red-200';
+      default:            return 'text-gray-500 bg-gray-100 border-gray-200';
     }
   };
 
@@ -199,60 +197,60 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
   const isPrivileged = ['admin', 'management'].includes(currentUser?.role);
 
   if (loading) return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#11144C]" />
       </div>
     </div>
   );
 
   if (error || !task) return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <p className="text-red-400">{error || t('Task not found', 'משימה לא נמצאה')}</p>
+        <p className="text-red-500">{error || t('Task not found', 'משימה לא נמצאה')}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 px-4 md:px-6 pb-10 pt-6">
         <Sidebar />
         <section className="space-y-6">
 
           {/* Task Header */}
-          <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+          <div className="rounded-3xl bg-[#11144C] p-8">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <button onClick={() => window.location.href = '/tasks'}
-                  className="text-white/50 hover:text-white text-sm">
+                  className="text-white/60 hover:text-white text-sm transition">
                   ← {t('Tasks', 'משימות')}
                 </button>
                 <div className="flex items-center gap-3 mt-2">
-                  <h1 className="text-2xl font-semibold">{displayed.title}</h1>
-                  {translating && <span className="text-xs text-white/30">{t('Translating…', 'מתרגם…')}</span>}
+                  <h1 className="text-2xl font-semibold text-white">{displayed?.title}</h1>
+                  {translating && <span className="text-xs text-white/40">{t('Translating…', 'מתרגם…')}</span>}
                 </div>
-                {displayed.description && <p className="mt-1 text-white/60">{displayed.description}</p>}
+                {displayed?.description && <p className="mt-1 text-white/70">{displayed.description}</p>}
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusColor(task.status)}`}>
                     {statusLabel(task.status)}
                   </span>
-                  {displayed.project && (
+                  {displayed?.project && (
                     <button onClick={() => window.location.href = `/projects/${task.project.id}`}
-                      className="text-xs text-white/40 hover:text-white">
+                      className="text-xs text-white/50 hover:text-white transition">
                       📁 {displayed.project.name}
                     </button>
                   )}
-                  {task.assignee && <span className="text-xs text-white/40">👤 {task.assignee.name}</span>}
-                  {task.creator && <span className="text-xs text-white/40">{t('Created by', 'נוצר על ידי')} {task.creator.name}</span>}
+                  {task.assignee && <span className="text-xs text-white/50">👤 {task.assignee.name}</span>}
+                  {task.creator  && <span className="text-xs text-white/50">{t('Created by', 'נוצר על ידי')} {task.creator.name}</span>}
                   {task.red_flag && <span className="text-red-400 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>}
                 </div>
               </div>
               <button onClick={() => setShowUpload(!showUpload)}
-                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition">
+                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-[#11144C] hover:bg-gray-100 transition">
                 + {t('Upload', 'העלה')}
               </button>
             </div>
@@ -268,8 +266,8 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
                     onClick={() => updateStatus(status)}
                     className={`rounded-full border px-4 py-2 text-xs font-medium transition ${
                       task.status === status
-                        ? statusColor(status) + ' opacity-100'
-                        : 'border-white/10 text-white/50 hover:bg-white/10'
+                        ? statusColor(status)
+                        : 'border-white/20 text-white/60 hover:bg-white/10'
                     } disabled:opacity-50`}
                   >
                     {statusLabel(status)}
@@ -279,7 +277,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
             </div>
 
             {showUpload && task.project && (
-              <div className="mt-6 rounded-3xl border border-white/10 bg-black/40 p-6">
+              <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-6">
                 <MediaUpload
                   projectId={task.project.id}
                   taskId={id}
@@ -290,11 +288,13 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {(['details', 'notes', 'photos', 'files'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`rounded-full px-5 py-2 text-sm font-medium transition ${
-                  activeTab === tab ? 'bg-white text-black' : 'border border-white/10 text-white hover:bg-white/10'
+                  activeTab === tab
+                    ? 'bg-[#11144C] text-white'
+                    : 'border border-gray-200 text-gray-600 bg-white hover:bg-gray-50'
                 }`}>
                 {tab === 'photos'
                   ? `${t('Media', 'מדיה')} (${photos.length + videoFiles.length})`
@@ -309,27 +309,27 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
 
           {/* Details Tab */}
           {activeTab === 'details' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8 space-y-4">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-3xl bg-black/40 p-4">
-                  <p className="text-xs text-white/50">{t('Created', 'נוצר')}</p>
-                  <p className="mt-1 text-sm">{new Date(task.created_at).toLocaleString(lang === 'HE' ? 'he-IL' : 'en-US')}</p>
+                <div className="rounded-2xl bg-[#F5F6FA] border border-gray-200 p-4">
+                  <p className="text-xs text-gray-400">{t('Created', 'נוצר')}</p>
+                  <p className="mt-1 text-sm text-gray-900">{new Date(task.created_at).toLocaleString(lang === 'HE' ? 'he-IL' : 'en-US')}</p>
                 </div>
-                <div className="rounded-3xl bg-black/40 p-4">
-                  <p className="text-xs text-white/50">{t('Last Updated', 'עודכן לאחרונה')}</p>
-                  <p className="mt-1 text-sm">{new Date(task.updated_at).toLocaleString(lang === 'HE' ? 'he-IL' : 'en-US')}</p>
+                <div className="rounded-2xl bg-[#F5F6FA] border border-gray-200 p-4">
+                  <p className="text-xs text-gray-400">{t('Last Updated', 'עודכן לאחרונה')}</p>
+                  <p className="mt-1 text-sm text-gray-900">{new Date(task.updated_at).toLocaleString(lang === 'HE' ? 'he-IL' : 'en-US')}</p>
                 </div>
                 {task.assignee && (
-                  <div className="rounded-3xl bg-black/40 p-4">
-                    <p className="text-xs text-white/50">{t('Assigned To', 'מוקצה ל')}</p>
-                    <p className="mt-1 text-sm">{task.assignee.name}</p>
-                    <p className="text-xs text-white/40">{task.assignee.email}</p>
+                  <div className="rounded-2xl bg-[#F5F6FA] border border-gray-200 p-4">
+                    <p className="text-xs text-gray-400">{t('Assigned To', 'מוקצה ל')}</p>
+                    <p className="mt-1 text-sm text-gray-900">{task.assignee.name}</p>
+                    <p className="text-xs text-gray-400">{task.assignee.email}</p>
                   </div>
                 )}
-                {displayed.project && (
-                  <div className="rounded-3xl bg-black/40 p-4">
-                    <p className="text-xs text-white/50">{t('Project', 'פרויקט')}</p>
-                    <p className="mt-1 text-sm">{displayed.project.name}</p>
+                {displayed?.project && (
+                  <div className="rounded-2xl bg-[#F5F6FA] border border-gray-200 p-4">
+                    <p className="text-xs text-gray-400">{t('Project', 'פרויקט')}</p>
+                    <p className="mt-1 text-sm text-gray-900">{displayed.project.name}</p>
                   </div>
                 )}
               </div>
@@ -338,15 +338,15 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
 
           {/* Notes Tab */}
           {activeTab === 'notes' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider">
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
                   {t('Notes', 'הערות')}
                 </h2>
                 {!editingNotes && (
                   <button
                     onClick={() => setEditingNotes(true)}
-                    className="text-xs text-white/50 hover:text-white border border-white/10 rounded-full px-3 py-1 transition"
+                    className="text-xs text-gray-500 hover:text-[#11144C] border border-gray-200 rounded-full px-3 py-1 transition"
                   >
                     + {t('Add note', 'הוסף הערה')}
                   </button>
@@ -361,21 +361,19 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
                     const isHeader = header.startsWith('[') && header.endsWith(']');
                     const body     = translatedNotes[i] || lines.slice(1).join('\n') || entry;
                     return (
-                      <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                      <div key={i} className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-4">
                         <div className="flex items-start justify-between gap-2">
                           <div className="space-y-1 flex-1">
                             {isHeader && (
-                              <p className="text-xs text-white/30">{header.slice(1, -1)}</p>
+                              <p className="text-xs text-gray-400">{header.slice(1, -1)}</p>
                             )}
-                            <p className="text-white/70 leading-relaxed whitespace-pre-wrap text-sm">
-                              {body}
-                            </p>
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm">{body}</p>
                           </div>
                           {currentUser?.role === 'admin' && (
                             <button
                               onClick={() => deleteNote(i)}
                               disabled={saving}
-                              className="shrink-0 text-xs text-white/20 hover:text-red-400 transition disabled:opacity-50"
+                              className="shrink-0 text-xs text-gray-300 hover:text-red-500 transition disabled:opacity-50"
                               title={t('Delete note', 'מחק הערה')}
                             >
                               ✕
@@ -387,7 +385,7 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
                   })}
                 </div>
               ) : (
-                <p className="text-white/30 text-sm mb-6">{t('No notes yet.', 'אין הערות עדיין.')}</p>
+                <p className="text-gray-400 text-sm mb-6">{t('No notes yet.', 'אין הערות עדיין.')}</p>
               )}
 
               {editingNotes && (
@@ -397,19 +395,19 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
                     onChange={e => setNotes(e.target.value)}
                     rows={4}
                     placeholder={t('Write a new note…', 'כתוב הערה חדשה…')}
-                    className="w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30 resize-none"
+                    className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] p-4 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#11144C] resize-none"
                   />
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => { setEditingNotes(false); setNotes(''); }}
-                      className="text-xs text-white/50 hover:text-white border border-white/10 rounded-full px-3 py-1 transition"
+                      className="text-xs text-gray-500 hover:text-gray-900 border border-gray-200 rounded-full px-3 py-1 transition"
                     >
                       {t('Cancel', 'ביטול')}
                     </button>
                     <button
                       onClick={saveNote}
                       disabled={saving || !notes.trim()}
-                      className="text-xs font-semibold bg-white text-black rounded-full px-4 py-1 hover:bg-slate-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-xs font-semibold bg-[#11144C] text-white rounded-full px-4 py-1 hover:bg-[#1a1f6e] transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {saving ? t('Saving…', 'שומר…') : t('Add note', 'הוסף הערה')}
                     </button>
@@ -419,11 +417,11 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
             </div>
           )}
 
-          {/* Photos Tab — images + videos */}
+          {/* Photos Tab */}
           {activeTab === 'photos' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
               {photos.length === 0 && videoFiles.length === 0 ? (
-                <p className="text-center text-white/50 py-8">
+                <p className="text-center text-gray-400 py-8">
                   {t('No photos yet. Click Upload to add photos.', 'אין תמונות עדיין. לחץ על העלה להוספת תמונות.')}
                 </p>
               ) : (
@@ -441,44 +439,32 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
             </div>
           )}
 
-          {/* Files Tab — PDFs only */}
+          {/* Files Tab */}
           {activeTab === 'files' && (
-            <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8 space-y-3">
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8 space-y-3">
               {pdfFiles.length === 0 ? (
-                <p className="text-center text-white/50 py-8">
+                <p className="text-center text-gray-400 py-8">
                   {t('No files yet. Click Upload to add files.', 'אין קבצים עדיין. לחץ על העלה להוספת קבצים.')}
                 </p>
               ) : pdfFiles.map(file => (
-                <div key={file.id} className="rounded-3xl border border-white/10 bg-black/40 p-5 space-y-3">
+                <div key={file.id} className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{file.description}</p>
-                      <p className="text-xs text-white/40">
-                        {file.mime_type} · {(file.size / 1024).toFixed(1)} KB
-                      </p>
-                      {/* Pending approval badge — only admins/management see this */}
-                      {file.pending_approval && isPrivileged && (
-                        <p className="text-xs text-amber-400 mt-1">
-                          ⏳ {t('Waiting for approval', 'ממתין לאישור')}
-                        </p>
+                      <p className="font-medium text-gray-900">{file.description}</p>
+                      <p className="text-xs text-gray-400">{file.mime_type} · {(file.size / 1024).toFixed(1)} KB</p>
+                      {file.pending_approval && !file.approval_note && isPrivileged && (
+                        <p className="text-xs text-amber-600 mt-1">⏳ {t('Waiting for approval', 'ממתין לאישור')}</p>
                       )}
-                      {/* Approval note */}
                       {file.approval_note && (
-                        <p className="text-xs text-green-400/70 mt-1">
+                        <p className="text-xs text-green-600 mt-1">
                           ✓ {t('Approved', 'אושר')} · {file.approval_note.split('\n')[0].replace(/[\[\]]/g, '')}
                         </p>
                       )}
                     </div>
-                    {file.red_flag && (
-                      <span className="text-red-400 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>
-                    )}
+                    {file.red_flag && <span className="text-red-500 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>}
                   </div>
-                  <MediaViewer
-                    boxFileId={file.object_key}
-                    mediaType="document"
-                    fileName={file.description}
-                    uploadedAt={file.uploaded_at}
-                  />
+                  <MediaViewer boxFileId={file.object_key} mediaType="document"
+                    fileName={file.description} uploadedAt={file.uploaded_at} />
                 </div>
               ))}
             </div>

@@ -2,11 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light Theme Color System */
 :root {
-  color-scheme: dark;
+  /* Backgrounds */
+  --color-bg-page: #F5F6FA;
+  --color-bg-card: #FFFFFF;
+  --color-bg-header: #11144C;
+  
+  /* Text */
+  --color-text-primary: #0a0a0a;
+  --color-text-secondary: #6b7280;
+  --color-text-accent: #FFFFFF;
+  
+  /* Borders */
+  --color-border: #e5e7eb;
+  
+  /* Accent */
+  --color-accent: #11144C;
+  
+  /* Status Colors */
+  --color-status-success: #059669;
+  --color-status-info: #0284c7;
+  --color-status-warning: #d97706;
+  --color-status-error: #dc2626;
+  
+  /* Typography */
+  color-scheme: light;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #FFFFFF;
-  background-color: #000000;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-page);
 }
 
 html, body {
@@ -16,15 +40,31 @@ html, body {
 }
 
 body {
-  background: #000000;
-  color: #FFFFFF;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
 }
 
 button, input, select, textarea {
   font: inherit;
 }
 
+/* Selection styling */
 ::selection {
-  background: #11144C;
-  color: #FFFFFF;
+  background: var(--color-accent);
+  color: var(--color-text-accent);
+}
+
+/* Base component styles using the color system */
+@layer components {
+  .card {
+    @apply bg-bg-card border border-border rounded-lg shadow-sm;
+  }
+  
+  .button-primary {
+    @apply bg-accent text-accent-text px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity;
+  }
+  
+  .text-secondary {
+    @apply text-text-secondary;
+  }
 }

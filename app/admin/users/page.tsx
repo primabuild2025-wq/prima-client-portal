@@ -6,15 +6,14 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { useLang } from '@/lib/context/LanguageContext';
 
-const ROLES = ['admin', 'management', 'staff', 'supervisor', 'designer', 'client'];
+const ROLES = ['admin', 'management', 'staff', 'designer', 'client'];
 
 const roleLabel = (role: string) => {
   switch (role) {
     case 'admin':      return 'Admin';
     case 'management': return 'Management';
-    case 'staff':      return 'Staff';
-    case 'supervisor':      return 'Supervisor';
-    case 'designer':   return 'Designer';
+    case 'staff':      return 'Staff (Internal)';
+    case 'designer':   return 'Designer (External)';
     case 'client':     return 'Client';
     default:           return role;
   }
@@ -22,35 +21,32 @@ const roleLabel = (role: string) => {
 
 const roleColor = (role: string) => {
   switch (role) {
-    case 'admin':      return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
-    case 'management': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-    case 'staff':      return 'text-green-400 bg-green-400/10 border-green-400/20';
-    case 'supervisor':      return 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
-    case 'designer':   return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
-    case 'client':     return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
-    default:           return 'text-white/50 bg-white/5 border-white/10';
+    case 'admin':      return 'text-purple-700 bg-purple-50 border-purple-200';
+    case 'management': return 'text-blue-700 bg-blue-50 border-blue-200';
+    case 'staff':      return 'text-green-700 bg-green-50 border-green-200';
+    case 'designer':   return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+    case 'client':     return 'text-orange-700 bg-orange-50 border-orange-200';
+    default:           return 'text-gray-500 bg-gray-100 border-gray-200';
   }
 };
 
 export default function UsersPage() {
-  const [users, setUsers]               = useState<any[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState<string | null>(null);
-  const [currentUser, setCurrentUser]   = useState<any>(null);
+  const [users, setUsers]             = useState<any[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Add user modal
-  const [showAdd, setShowAdd]           = useState(false);
-  const [addForm, setAddForm]           = useState({ name: '', email: '', role: 'staff', password: '' });
-  const [addError, setAddError]         = useState<string | null>(null);
-  const [addSaving, setAddSaving]       = useState(false);
+  const [showAdd, setShowAdd]         = useState(false);
+  const [addForm, setAddForm]         = useState({ name: '', email: '', role: 'staff', password: '' });
+  const [addError, setAddError]       = useState<string | null>(null);
+  const [addSaving, setAddSaving]     = useState(false);
 
-  // Edit user modal
-  const [editUser, setEditUser]         = useState<any | null>(null);
-  const [editForm, setEditForm]         = useState({ name: '', role: '', newPassword: '' });
-  const [editError, setEditError]       = useState<string | null>(null);
-  const [editSaving, setEditSaving]     = useState(false);
+  const [editUser, setEditUser]       = useState<any | null>(null);
+  const [editForm, setEditForm]       = useState({ name: '', role: '', newPassword: '' });
+  const [editError, setEditError]     = useState<string | null>(null);
+  const [editSaving, setEditSaving]   = useState(false);
 
-  const [togglingId, setTogglingId]     = useState<string | null>(null);
+  const [togglingId, setTogglingId]   = useState<string | null>(null);
 
   const { t } = useLang();
 
@@ -82,9 +78,9 @@ export default function UsersPage() {
   };
 
   const handleAddUser = async () => {
-    if (!addForm.name.trim())     { setAddError(t('Name is required.', 'שם הוא שדה חובה.')); return; }
-    if (!addForm.email.trim())    { setAddError(t('Email is required.', 'אימייל הוא שדה חובה.')); return; }
-    if (!addForm.password.trim()) { setAddError(t('Password is required.', 'סיסמה היא שדה חובה.')); return; }
+    if (!addForm.name.trim())        { setAddError(t('Name is required.', 'שם הוא שדה חובה.')); return; }
+    if (!addForm.email.trim())       { setAddError(t('Email is required.', 'אימייל הוא שדה חובה.')); return; }
+    if (!addForm.password.trim())    { setAddError(t('Password is required.', 'סיסמה היא שדה חובה.')); return; }
     if (addForm.password.length < 6) { setAddError(t('Password must be at least 6 characters.', 'סיסמה חייבת להכיל לפחות 6 תווים.')); return; }
 
     setAddSaving(true);
@@ -163,63 +159,68 @@ export default function UsersPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#11144C]" />
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
-      <div className="grid grid-cols-[280px_1fr] gap-6 px-6 pb-10 pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 px-4 md:px-6 pb-10 pt-6">
         <Sidebar />
         <section className="space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+          <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
+
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold">{t('Users', 'משתמשים')}</h2>
-                <p className="text-sm text-white/70">{users.length} {t('total', 'סה"כ')}</p>
+                <h2 className="text-xl font-semibold text-gray-900">{t('Users', 'משתמשים')}</h2>
+                <p className="text-sm text-gray-500">{users.length} {t('total', 'סה"כ')}</p>
               </div>
               <button
                 onClick={() => { setShowAdd(true); setAddForm({ name: '', email: '', role: 'staff', password: '' }); setAddError(null); }}
-                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition"
+                className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1a1f6e] transition"
               >
                 + {t('Add User', 'הוסף משתמש')}
               </button>
             </div>
 
-            {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
+            {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
             <div className="space-y-3">
               {users.map(user => (
-                <div key={user.id}
-                  className={`rounded-3xl border p-5 flex items-center justify-between gap-4 transition ${
-                    user.blocked ? 'border-red-500/20 bg-red-500/5' : 'border-white/10 bg-black/40'
-                  }`}>
+                <div
+                  key={user.id}
+                  className={`rounded-2xl border p-5 flex items-center justify-between gap-4 transition ${
+                    user.blocked
+                      ? 'border-red-200 bg-red-50'
+                      : 'border-gray-200 bg-[#F5F6FA]'
+                  }`}
+                >
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`font-medium ${user.blocked ? 'text-white/40 line-through' : 'text-white'}`}>
+                      <p className={`font-medium ${user.blocked ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                         {user.name}
                       </p>
                       {user.id === currentUser?.id && (
-                        <span className="text-xs text-white/30">({t('you', 'אתה')})</span>
+                        <span className="text-xs text-gray-400">({t('you', 'אתה')})</span>
                       )}
                       {user.blocked && (
-                        <span className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-full px-2 py-0.5">
+                        <span className="text-xs text-red-600 bg-red-100 border border-red-200 rounded-full px-2 py-0.5">
                           🚫 {t('Blocked', 'חסום')}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-white/50">{user.email}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${roleColor(user.role)}`}>
                         {roleLabel(user.role)}
                       </span>
                       {user.created_at && (
-                        <span className="text-xs text-white/30">
+                        <span className="text-xs text-gray-400">
                           {t('Joined', 'הצטרף')} {new Date(user.created_at).toLocaleDateString()}
                         </span>
                       )}
@@ -230,7 +231,7 @@ export default function UsersPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => { setEditUser(user); setEditForm({ name: user.name, role: user.role, newPassword: '' }); setEditError(null); }}
-                        className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/10 transition"
+                        className="rounded-full border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 transition"
                       >
                         {t('Edit', 'ערוך')}
                       </button>
@@ -239,8 +240,8 @@ export default function UsersPage() {
                         disabled={togglingId === user.id}
                         className={`rounded-full border px-3 py-1.5 text-xs transition disabled:opacity-50 ${
                           user.blocked
-                            ? 'border-green-500/20 bg-green-500/10 text-green-400 hover:bg-green-500/20'
-                            : 'border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                            ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
+                            : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
                         }`}
                       >
                         {togglingId === user.id ? '…' : user.blocked ? t('Unblock', 'בטל חסימה') : t('Block', 'חסום')}
@@ -256,51 +257,45 @@ export default function UsersPage() {
 
       {/* Add User Modal */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#11144C] p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-gray-200 shadow-2xl p-8 space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{t('Add User', 'הוסף משתמש')}</h3>
-              <button onClick={() => setShowAdd(false)} className="text-white/40 hover:text-white transition text-lg">✕</button>
+              <h3 className="text-xl font-semibold text-gray-900">{t('Add User', 'הוסף משתמש')}</h3>
+              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-900 transition text-lg">✕</button>
             </div>
-
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">{t('Name', 'שם')} *</label>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Name', 'שם')} *</label>
               <input type="text" value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })}
                 placeholder={t('Full name', 'שם מלא')}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white placeholder:text-white/30" />
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C] placeholder:text-gray-400" />
             </div>
-
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">{t('Email', 'אימייל')} *</label>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Email', 'אימייל')} *</label>
               <input type="email" value={addForm.email} onChange={e => setAddForm({ ...addForm, email: e.target.value })}
                 placeholder="email@example.com"
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white placeholder:text-white/30" />
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C] placeholder:text-gray-400" />
             </div>
-
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">{t('Role', 'תפקיד')} *</label>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Role', 'תפקיד')} *</label>
               <select value={addForm.role} onChange={e => setAddForm({ ...addForm, role: e.target.value })}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white">
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]">
                 {ROLES.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
               </select>
             </div>
-
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">{t('Password', 'סיסמה')} *</label>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Password', 'סיסמה')} *</label>
               <input type="password" value={addForm.password} onChange={e => setAddForm({ ...addForm, password: e.target.value })}
                 placeholder={t('Min 6 characters', 'לפחות 6 תווים')}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white placeholder:text-white/30" />
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C] placeholder:text-gray-400" />
             </div>
-
-            {addError && <p className="text-sm text-red-400">{addError}</p>}
-
+            {addError && <p className="text-sm text-red-500">{addError}</p>}
             <div className="flex gap-3 pt-1">
               <button onClick={() => setShowAdd(false)}
-                className="flex-1 rounded-full border border-white/10 px-5 py-3 text-sm text-white hover:bg-white/10 transition">
+                className="flex-1 rounded-full border border-gray-200 px-5 py-3 text-sm text-gray-600 hover:bg-gray-100 transition">
                 {t('Cancel', 'ביטול')}
               </button>
               <button onClick={handleAddUser} disabled={addSaving}
-                className="flex-1 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-slate-200 transition disabled:opacity-50">
+                className="flex-1 rounded-full bg-[#11144C] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1a1f6e] transition disabled:opacity-50">
                 {addSaving ? t('Creating...', 'יוצר...') : t('Create User', 'צור משתמש')}
               </button>
             </div>
@@ -310,45 +305,40 @@ export default function UsersPage() {
 
       {/* Edit User Modal */}
       {editUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#11144C] p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-gray-200 shadow-2xl p-8 space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{t('Edit User', 'ערוך משתמש')}</h3>
-              <button onClick={() => setEditUser(null)} className="text-white/40 hover:text-white transition text-lg">✕</button>
+              <h3 className="text-xl font-semibold text-gray-900">{t('Edit User', 'ערוך משתמש')}</h3>
+              <button onClick={() => setEditUser(null)} className="text-gray-400 hover:text-gray-900 transition text-lg">✕</button>
             </div>
-
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">{t('Name', 'שם')} *</label>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Name', 'שם')} *</label>
               <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white" />
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]" />
             </div>
-
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">{t('Role', 'תפקיד')}</label>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Role', 'תפקיד')}</label>
               <select value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white">
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]">
                 {ROLES.map(r => <option key={r} value={r}>{roleLabel(r)}</option>)}
               </select>
             </div>
-
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white">
-                {t('New Password', 'סיסמה חדשה')} <span className="text-white/30 font-normal">({t('optional', 'אופציונלי')})</span>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                {t('New Password', 'סיסמה חדשה')} <span className="text-gray-400 font-normal">({t('optional', 'אופציונלי')})</span>
               </label>
               <input type="password" value={editForm.newPassword} onChange={e => setEditForm({ ...editForm, newPassword: e.target.value })}
                 placeholder={t('Leave blank to keep current', 'השאר ריק לשמור נוכחית')}
-                className="w-full rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-white placeholder:text-white/30" />
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C] placeholder:text-gray-400" />
             </div>
-
-            {editError && <p className="text-sm text-red-400">{editError}</p>}
-
+            {editError && <p className="text-sm text-red-500">{editError}</p>}
             <div className="flex gap-3 pt-1">
               <button onClick={() => setEditUser(null)}
-                className="flex-1 rounded-full border border-white/10 px-5 py-3 text-sm text-white hover:bg-white/10 transition">
+                className="flex-1 rounded-full border border-gray-200 px-5 py-3 text-sm text-gray-600 hover:bg-gray-100 transition">
                 {t('Cancel', 'ביטול')}
               </button>
               <button onClick={handleEditUser} disabled={editSaving}
-                className="flex-1 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-slate-200 transition disabled:opacity-50">
+                className="flex-1 rounded-full bg-[#11144C] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1a1f6e] transition disabled:opacity-50">
                 {editSaving ? t('Saving...', 'שומר...') : t('Save Changes', 'שמור שינויים')}
               </button>
             </div>

@@ -41,16 +41,18 @@ export default function Sidebar() {
 
   const sidebarContent = (
     <aside className="flex flex-col space-y-6 h-full">
-      <div className="rounded-3xl bg-black/40 p-4 text-center">
-        <p className="text-sm uppercase text-white/70">Prima Build</p>
+      <div className="rounded-2xl bg-white/10 p-4 text-center">
+        <p className="text-sm font-semibold uppercase tracking-widest text-white/80">Prima Build</p>
       </div>
-      <nav className="space-y-2">
+      <nav className="space-y-1">
         {navItems.map((item) => (
           <button
             key={item.href}
             onClick={() => navigate(item.href)}
-            className={`flex w-full items-center gap-3 rounded-3xl px-4 py-3 text-white transition hover:bg-white/10 ${
-              pathname === item.href ? 'bg-white/10 font-semibold' : ''
+            className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm transition ${
+              pathname === item.href
+                ? 'bg-white text-[#11144C] font-semibold shadow-sm'
+                : 'text-white/80 hover:bg-white/10 hover:text-white'
             }`}
           >
             <span>{item.icon}</span>
@@ -64,23 +66,21 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="hidden md:block rounded-3xl border border-white/10 bg-[#11144C] p-6">
+      <div className="hidden md:block rounded-3xl bg-[#11144C] p-6 shadow-lg">
         {sidebarContent}
       </div>
 
       {/* Mobile overlay */}
       {open && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
-          {/* Drawer */}
-          <div className="relative z-10 w-72 bg-[#11144C] border-r border-white/10 p-6 flex flex-col">
+          <div className="relative z-10 w-72 bg-[#11144C] p-6 flex flex-col shadow-2xl">
             <button
               onClick={() => setOpen(false)}
-              className="self-end text-white/40 hover:text-white text-xl mb-4 transition"
+              className="self-end text-white/50 hover:text-white text-xl mb-4 transition"
             >
               ✕
             </button>

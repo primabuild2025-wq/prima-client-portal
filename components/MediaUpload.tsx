@@ -100,30 +100,30 @@ export default function MediaUpload({ projectId, taskId, onUploadComplete }: Med
 
       {/* Description */}
       <div>
-        <label className="mb-1 block text-xs font-semibold text-white/70">
-          {t('Description', 'תיאור')} <span className="text-red-400">*</span>{' '}
-          <span className="text-white/30">({t('max 20 chars', 'עד 20 תווים')})</span>
+        <label className="mb-1 block text-xs font-semibold text-gray-700">
+          {t('Description', 'תיאור')} <span className="text-red-500">*</span>{' '}
+          <span className="text-gray-400">({t('max 20 chars', 'עד 20 תווים')})</span>
         </label>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value.substring(0, 20))}
-          className="w-full rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-sm text-white outline-none focus:border-white"
+          className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400"
           placeholder={t('e.g. Site photo day 1', 'לדוג. תמונת אתר יום 1')}
           maxLength={20}
         />
-        <p className="mt-1 text-right text-xs text-white/30">{description.length}/20</p>
+        <p className="mt-1 text-right text-xs text-gray-400">{description.length}/20</p>
       </div>
 
       {/* Category */}
       <div>
-        <label className="mb-1 block text-xs font-semibold text-white/70">
+        <label className="mb-1 block text-xs font-semibold text-gray-700">
           {t('Category', 'קטגוריה')}
         </label>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="w-full rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-sm text-white outline-none focus:border-white"
+          className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30"
         >
           <option value="">{t('Select a category...', 'בחר קטגוריה...')}</option>
           {FILE_CATEGORIES.map(cat => (
@@ -132,7 +132,7 @@ export default function MediaUpload({ projectId, taskId, onUploadComplete }: Med
         </select>
       </div>
 
-      {/* Drop zone — only shown when no file selected */}
+      {/* Drop zone */}
       {!selectedFile && (
         <div
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -140,7 +140,9 @@ export default function MediaUpload({ projectId, taskId, onUploadComplete }: Med
           onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f); }}
           onClick={() => fileInputRef.current?.click()}
           className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition ${
-            dragOver ? 'border-white/40 bg-white/5' : 'border-white/10 hover:border-white/20'
+            dragOver
+              ? 'border-[#11144C]/30 bg-[#11144C]/5'
+              : 'border-gray-300 hover:border-[#11144C]/20 hover:bg-[#11144C]/5'
           }`}
         >
           <input
@@ -152,30 +154,30 @@ export default function MediaUpload({ projectId, taskId, onUploadComplete }: Med
           />
           <div className="flex flex-col items-center gap-2">
             <p className="text-2xl">📁</p>
-            <p className="text-sm text-white/70">{t('Drop a file or click to upload', 'גרור קובץ או לחץ להעלאה')}</p>
-            <p className="text-xs text-white/30">{t('Videos, photos, documents', 'סרטונים, תמונות, מסמכים')}</p>
+            <p className="text-sm text-gray-500">{t('Drop a file or click to upload', 'גרור קובץ או לחץ להעלאה')}</p>
+            <p className="text-xs text-gray-400">{t('Videos, photos, documents', 'סרטונים, תמונות, מסמכים')}</p>
           </div>
         </div>
       )}
 
       {/* Selected file preview + confirm */}
       {selectedFile && !uploading && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 space-y-3">
+        <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-white">📄 {selectedFile.name}</p>
-              <p className="text-xs text-white/40 mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+              <p className="text-sm font-medium text-gray-900">📄 {selectedFile.name}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB</p>
             </div>
             <button
               onClick={handleClearFile}
-              className="text-white/30 hover:text-white text-lg leading-none transition"
+              className="text-gray-400 hover:text-gray-700 text-lg leading-none transition"
             >
               ✕
             </button>
           </div>
           <button
             onClick={handleUpload}
-            className="w-full rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-slate-200 transition"
+            className="w-full rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
           >
             {t('Upload File', 'העלה קובץ')}
           </button>
@@ -184,21 +186,21 @@ export default function MediaUpload({ projectId, taskId, onUploadComplete }: Med
 
       {/* Uploading spinner */}
       {uploading && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 flex flex-col items-center gap-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-          <p className="text-sm text-white/50">{t('Uploading…', 'מעלה...')}</p>
+        <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-6 flex flex-col items-center gap-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#11144C]" />
+          <p className="text-sm text-gray-400">{t('Uploading…', 'מעלה...')}</p>
         </div>
       )}
 
       {/* Success */}
       {lastUploaded && (
-        <div className="rounded-2xl border border-green-500/20 bg-green-500/5 px-4 py-3">
-          <p className="text-xs font-medium text-green-400">✓ {t('Uploaded', 'הועלה')}: {lastUploaded.name}</p>
-          <p className="text-xs text-white/30 mt-0.5">{t('at', 'ב')} {lastUploaded.timestamp}</p>
+        <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-xs font-medium text-green-700">✓ {t('Uploaded', 'הועלה')}: {lastUploaded.name}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{t('at', 'ב')} {lastUploaded.timestamp}</p>
         </div>
       )}
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   );
 }

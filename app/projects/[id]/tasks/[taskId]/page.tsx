@@ -95,10 +95,7 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
   const updateStatus = async (newStatus: string) => {
     try {
       setSaving(true);
-      const { error } = await supabase
-        .from('tasks')
-        .update({ status: newStatus })
-        .eq('id', taskId);
+      const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
       if (error) throw error;
       setTask({ ...task, status: newStatus });
     } catch (err: any) {
@@ -112,9 +109,9 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
     if (!notes.trim()) return;
     try {
       setSaving(true);
-      const now = new Date().toISOString();
+      const now          = new Date().toISOString();
       const existingNotes = task.notes || '';
-      const authorName = currentUser?.name || 'Unknown';
+      const authorName   = currentUser?.name || 'Unknown';
       const newEntry = `[${new Date(now).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
       })} at ${new Date(now).toLocaleTimeString('en-US', {
@@ -157,11 +154,11 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
 
   const statusColor = (status: string) => {
     switch (status) {
-      case 'in_progress': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      case 'completed':   return 'text-green-400 bg-green-400/10 border-green-400/20';
-      case 'not_started': return 'text-white/50 bg-white/5 border-white/10';
-      case 'blocked':     return 'text-red-400 bg-red-400/10 border-red-400/20';
-      default:            return 'text-white/50 bg-white/5 border-white/10';
+      case 'in_progress': return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'completed':   return 'text-green-700 bg-green-50 border-green-200';
+      case 'not_started': return 'text-gray-500 bg-gray-100 border-gray-200';
+      case 'blocked':     return 'text-red-600 bg-red-50 border-red-200';
+      default:            return 'text-gray-500 bg-gray-100 border-gray-200';
     }
   };
 
@@ -175,23 +172,23 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
     }
   };
 
-  const statuses = ['not_started', 'in_progress', 'completed', 'blocked'];
+  const statuses  = ['not_started', 'in_progress', 'completed', 'blocked'];
   const displayed = translatedTask || task;
 
   if (loading) return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#11144C]" />
       </div>
     </div>
   );
 
   if (error || !task) return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <p className="text-red-400">{error || t('Task not found', 'משימה לא נמצאה')}</p>
+        <p className="text-red-500">{error || t('Task not found', 'משימה לא נמצאה')}</p>
       </div>
     </div>
   );
@@ -199,28 +196,30 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
   const noteEntries = task.notes ? task.notes.split('\n\n') : [];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 px-4 md:px-6 pb-10 pt-6">
         <Sidebar />
         <section className="space-y-6">
 
           {/* Header */}
-          <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+          <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
             <button
               onClick={() => window.location.href = `/projects/${id}`}
-              className="text-white/50 hover:text-white text-sm transition"
+              className="text-gray-400 hover:text-[#11144C] text-sm transition"
             >
               ← {displayed.project?.name ?? t('Project', 'פרויקט')}
             </button>
             <div className="mt-4 flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-semibold">{displayed.title}</h1>
-                  {translating && <span className="text-xs text-white/30">{t('Translating…', 'מתרגם…')}</span>}
+                  <h1 className="text-2xl font-semibold text-gray-900">{displayed.title}</h1>
+                  {translating && (
+                    <span className="text-xs text-gray-400">{t('Translating…', 'מתרגם…')}</span>
+                  )}
                 </div>
                 {displayed.description && (
-                  <p className="mt-2 text-white/60 leading-relaxed">{displayed.description}</p>
+                  <p className="mt-2 text-gray-500 leading-relaxed">{displayed.description}</p>
                 )}
               </div>
               <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${statusColor(task.status)}`}>
@@ -230,8 +229,8 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
           </div>
 
           {/* Change Status */}
-          <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
-            <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
+          <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
               {t('Status', 'סטטוס')}
             </h2>
             <div className="flex flex-wrap gap-2">
@@ -243,7 +242,7 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
                   className={`rounded-full border px-4 py-2 text-xs font-medium transition ${
                     task.status === status
                       ? statusColor(status)
-                      : 'border-white/10 text-white/50 hover:bg-white/10'
+                      : 'border-gray-200 text-gray-400 hover:bg-[#11144C]/5 hover:border-[#11144C]/30'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {statusLabel(status)}
@@ -253,24 +252,24 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
           </div>
 
           {/* Details */}
-          <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
-            <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-5">
+          <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-5">
               {t('Details', 'פרטים')}
             </h2>
             <div className="grid grid-cols-2 gap-6">
               {task.assignee && (
                 <div>
-                  <p className="text-xs text-white/40 mb-1">{t('Assignee', 'אחראי')}</p>
-                  <p className="font-medium">👤 {task.assignee.name}</p>
+                  <p className="text-xs text-gray-400 mb-1">{t('Assignee', 'אחראי')}</p>
+                  <p className="font-medium text-gray-900">👤 {task.assignee.name}</p>
                   {task.assignee.email && (
-                    <p className="text-xs text-white/40">{task.assignee.email}</p>
+                    <p className="text-xs text-gray-400">{task.assignee.email}</p>
                   )}
                 </div>
               )}
               {task.due_date && (
                 <div>
-                  <p className="text-xs text-white/40 mb-1">{t('Due Date', 'תאריך יעד')}</p>
-                  <p className="font-medium">
+                  <p className="text-xs text-gray-400 mb-1">{t('Due Date', 'תאריך יעד')}</p>
+                  <p className="font-medium text-gray-900">
                     {new Date(task.due_date).toLocaleDateString(lang === 'HE' ? 'he-IL' : 'en-US', {
                       year: 'numeric', month: 'long', day: 'numeric',
                     })}
@@ -279,13 +278,13 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
               )}
               {task.priority && (
                 <div>
-                  <p className="text-xs text-white/40 mb-1">{t('Priority', 'עדיפות')}</p>
-                  <p className="font-medium capitalize">{task.priority}</p>
+                  <p className="text-xs text-gray-400 mb-1">{t('Priority', 'עדיפות')}</p>
+                  <p className="font-medium text-gray-900 capitalize">{task.priority}</p>
                 </div>
               )}
               <div>
-                <p className="text-xs text-white/40 mb-1">{t('Created', 'נוצר')}</p>
-                <p className="font-medium">
+                <p className="text-xs text-gray-400 mb-1">{t('Created', 'נוצר')}</p>
+                <p className="font-medium text-gray-900">
                   {new Date(task.created_at).toLocaleDateString(lang === 'HE' ? 'he-IL' : 'en-US', {
                     year: 'numeric', month: 'long', day: 'numeric',
                   })}
@@ -295,15 +294,15 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
           </div>
 
           {/* Notes */}
-          <div className="rounded-3xl border border-white/10 bg-[#11144C] p-8">
+          <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider">
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
                 {t('Notes', 'הערות')}
               </h2>
               {!editingNotes && (
                 <button
                   onClick={() => setEditingNotes(true)}
-                  className="text-xs text-white/50 hover:text-white border border-white/10 rounded-full px-3 py-1 transition"
+                  className="text-xs text-gray-500 hover:text-[#11144C] border border-gray-200 hover:border-[#11144C]/30 rounded-full px-3 py-1 transition"
                 >
                   + {t('Add note', 'הוסף הערה')}
                 </button>
@@ -313,18 +312,18 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
             {noteEntries.length > 0 ? (
               <div className="space-y-4 mb-6">
                 {noteEntries.map((entry: string, i: number) => {
-                  const lines = entry.split('\n');
-                  const header = lines[0];
+                  const lines    = entry.split('\n');
+                  const header   = lines[0];
                   const isHeader = header.startsWith('[') && header.endsWith(']');
-                  const body = translatedNotes[i] || lines.slice(1).join('\n') || entry;
+                  const body     = translatedNotes[i] || lines.slice(1).join('\n') || entry;
                   return (
-                    <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-4 space-y-1">
+                    <div key={i} className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-4 space-y-1">
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1 flex-1">
                           {isHeader && (
-                            <p className="text-xs text-white/30">{header.slice(1, -1)}</p>
+                            <p className="text-xs text-gray-400">{header.slice(1, -1)}</p>
                           )}
-                          <p className="text-white/70 leading-relaxed whitespace-pre-wrap text-sm">
+                          <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm">
                             {body}
                           </p>
                         </div>
@@ -332,7 +331,7 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
                           <button
                             onClick={() => deleteNote(i)}
                             disabled={saving}
-                            className="shrink-0 text-xs text-white/20 hover:text-red-400 transition disabled:opacity-50"
+                            className="shrink-0 text-xs text-gray-300 hover:text-red-500 transition disabled:opacity-50"
                             title={t('Delete note', 'מחק הערה')}
                           >
                             ✕
@@ -344,7 +343,7 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
                 })}
               </div>
             ) : (
-              <p className="text-white/30 text-sm mb-6">{t('No notes yet.', 'אין הערות עדיין.')}</p>
+              <p className="text-gray-400 text-sm mb-6">{t('No notes yet.', 'אין הערות עדיין.')}</p>
             )}
 
             {editingNotes && (
@@ -354,19 +353,19 @@ export default function TaskDetailPage({ params }: { params: { id: string; taskI
                   onChange={e => setNotes(e.target.value)}
                   rows={4}
                   placeholder={t('Write a new note…', 'כתוב הערה חדשה…')}
-                  className="w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30 resize-none"
+                  className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] p-4 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#11144C]/30 resize-none"
                 />
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => { setEditingNotes(false); setNotes(''); }}
-                    className="text-xs text-white/50 hover:text-white border border-white/10 rounded-full px-3 py-1 transition"
+                    className="text-xs text-gray-500 hover:text-gray-900 border border-gray-200 rounded-full px-3 py-1 transition"
                   >
                     {t('Cancel', 'ביטול')}
                   </button>
                   <button
                     onClick={saveNotes}
                     disabled={saving || !notes.trim()}
-                    className="text-xs font-semibold bg-white text-black rounded-full px-4 py-1 hover:bg-slate-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-xs font-semibold bg-[#11144C] text-white rounded-full px-4 py-1 hover:bg-[#11144C]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {saving ? t('Saving…', 'שומר…') : t('Add note', 'הוסף הערה')}
                   </button>
