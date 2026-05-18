@@ -1,0 +1,26 @@
+{
+  "name": "Prima Build",
+  "short_name": "Prima",
+  "description": "Prima Build Project Portal",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F5F6FA",
+  "theme_color": "#11144C",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
