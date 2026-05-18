@@ -118,7 +118,7 @@ export default function DashboardPage() {
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
                 <button
-                  onClick={() => window.location.href = '/projects'}
+                  onClick={() => window.location.href = `/projects/${flag.project?.id}?tab=files`}
                   className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 text-left hover:border-[#11144C]/30 hover:bg-[#11144C]/5 transition group"
                 >
                   <p className="text-sm text-gray-500">{t('Total Projects', 'סה״כ פרויקטים')}</p>
@@ -245,12 +245,12 @@ export default function DashboardPage() {
                   data.redFlags.map((flag: any) => (
                     <li key={flag.id}>
                       <button
-                        onClick={() => window.location.href = `/projects/${flag.project?.id}`}
+                        onClick={() => window.location.href = `/projects/${flag.project?.id}?tab=files&fileId=${flag.id}`}
                         className="w-full rounded-2xl border border-red-200 bg-red-50 p-4 text-left hover:bg-red-100 transition"
                       >
                         <p className="font-medium text-red-600">{flag.description}</p>
                         <p className="mt-1 text-sm text-gray-600">{flag.project?.name}</p>
-                        <p className="mt-1 text-xs text-red-400">{t('Go to project →', 'עבור לפרויקט →')}</p>
+                        <p className="mt-1 text-xs text-red-400">{t('Go to file →', 'עבור לקובץ →')}</p>
                       </button>
                     </li>
                   ))
