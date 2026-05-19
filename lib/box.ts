@@ -1,23 +1,30 @@
 const jwt = require('jsonwebtoken');
 
 function getConfig() {
-  function getConfig() {
   const privateKey = process.env.BOX_JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   if (!privateKey) throw new Error('BOX_JWT_PRIVATE_KEY is not set');
+
+  if (!process.env.BOX_CLIENT_ID)     throw new Error('BOX_CLIENT_ID is not set');
+  if (!process.env.BOX_CLIENT_SECRET) throw new Error('BOX_CLIENT_SECRET is not set');
+  if (!process.env.BOX_JWT_PASSPHRASE) throw new Error('BOX_JWT_PASSPHRASE is not set');
+  if (!process.env.BOX_JWT_KEY_ID)    throw new Error('BOX_JWT_KEY_ID is not set');
+  if (!process.env.BOX_ENTERPRISE_ID) throw new Error('BOX_ENTERPRISE_ID is not set');
+
   return {
     boxAppSettings: {
-      clientID:     process.env.BOX_CLIENT_ID!,
-      clientSecret: process.env.BOX_CLIENT_SECRET!,
+      clientID:     process.env.BOX_CLIENT_ID,
+      clientSecret: process.env.BOX_CLIENT_SECRET,
       appAuth: {
         privateKey,
-        passphrase:  process.env.BOX_JWT_PASSPHRASE!,
-        publicKeyID: process.env.BOX_JWT_KEY_ID!,
+        passphrase:  process.env.BOX_JWT_PASSPHRASE,
+        publicKeyID: process.env.BOX_JWT_KEY_ID,
       },
     },
-    enterpriseID: process.env.BOX_ENTERPRISE_ID!,
+    enterpriseID: process.env.BOX_ENTERPRISE_ID,
   };
 }
-}
+
+// ... rest of the file stays exactly the same
 
 async function getAccessToken() {
   const c = getConfig();
