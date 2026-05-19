@@ -145,7 +145,7 @@ export default function DashboardPage() {
                 </button>
 
                 <button
-                  onClick={() => window.location.href = '/notifications'}
+                  onClick={() => window.location.href = `/projects/${flag.project?.id}?tab=files&fileId=${flag.id}`}
                   className="rounded-2xl border border-red-200 bg-red-50 p-5 text-left hover:bg-red-100 transition group"
                 >
                   <p className="text-sm text-gray-500">{t('Red Flags', 'דגלים אדומים')}</p>
