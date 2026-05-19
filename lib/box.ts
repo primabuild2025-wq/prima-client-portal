@@ -1,10 +1,20 @@
-const fs = require('fs');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 
 function getConfig() {
-  const configPath = path.join(process.cwd(), 'config.json');
-  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const privateKey = process.env.BOX_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  if (!privateKey) throw new Error('BOX_PRIVATE_KEY is not set');
+  return {
+    boxAppSettings: {
+      clientID:     process.env.BOX_CLIENT_ID!,
+      clientSecret: process.env.BOX_CLIENT_SECRET!,
+      appAuth: {
+        privateKey,
+        passphrase:  process.env.BOX_PASSPHRASE!,
+        publicKeyID: process.env.BOX_PUBLIC_KEY_ID!,
+      },
+    },
+    enterpriseID: process.env.BOX_ENTERPRISE_ID!,
+  };
 }
 
 async function getAccessToken() {
@@ -23,7 +33,7 @@ async function getAccessToken() {
 
   const privateKey = c.boxAppSettings.appAuth.privateKey;
   const passphrase = c.boxAppSettings.appAuth.passphrase;
-  const keyId = c.boxAppSettings.appAuth.publicKeyID;
+  const keyId      = c.boxAppSettings.appAuth.publicKeyID;
 
   const assertion = jwt.sign(claims, { key: privateKey, passphrase }, {
     algorithm: 'RS256',
@@ -34,9 +44,9 @@ async function getAccessToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      grant_type:    'urn:ietf:params:oauth:grant-type:jwt-bearer',
       assertion,
-      client_id: c.boxAppSettings.clientID,
+      client_id:     c.boxAppSettings.clientID,
       client_secret: c.boxAppSettings.clientSecret,
     }),
   });
@@ -66,7 +76,6 @@ export async function createBoxFolder(name: string, parentFolderId: string = '0'
       name,
       parent: { id: parentFolderId },
     });
-    console.log('Box folder response:', JSON.stringify(folder));
     if (folder?.id) return folder.id;
     if (folder?.status === 409 || folder?.code === 'item_name_in_use') {
       const items = await boxRequest('GET', `/folders/${parentFolderId}/items`);
@@ -84,8 +93,8 @@ export async function createProjectFolders(projectName: string) {
   const rootFolderId = process.env.BOX_ROOT_FOLDER_ID || '0';
   const projectFolderId = await createBoxFolder(projectName, rootFolderId);
   const [videosFolderId, photosFolderId, documentsFolderId] = await Promise.all([
-    createBoxFolder('Videos', projectFolderId || '0'),
-    createBoxFolder('Photos', projectFolderId || '0'),
+    createBoxFolder('Videos',    projectFolderId || '0'),
+    createBoxFolder('Photos',    projectFolderId || '0'),
     createBoxFolder('Documents', projectFolderId || '0'),
   ]);
   return { projectFolderId, videosFolderId, photosFolderId, documentsFolderId };
@@ -96,27 +105,26 @@ export async function uploadToBox(fileBuffer: Buffer, fileName: string, folderId
   const FormData = require('form-data');
   const form = new FormData();
 
-  // Append timestamp to filename to guarantee uniqueness in Box
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const ext       = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
-  const base      = fileName.includes('.') ? fileName.slice(0, fileName.lastIndexOf('.')) : fileName;
+  const timestamp  = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const ext        = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
+  const base       = fileName.includes('.') ? fileName.slice(0, fileName.lastIndexOf('.')) : fileName;
   const uniqueName = `${base}_${timestamp}${ext}`;
 
   form.append('attributes', JSON.stringify({
     name:   uniqueName,
-    parent: { id: folderId }
+    parent: { id: folderId },
   }));
-  form.append('file', fileBuffer, { 
-    filename: fileName, 
+  form.append('file', fileBuffer, {
+    filename:    fileName,
     contentType: mimeType,
-    knownLength: fileBuffer.length
+    knownLength: fileBuffer.length,
   });
 
   const res = await fetch('https://upload.box.com/api/2.0/files/content', {
     method: 'POST',
-    headers: { 
+    headers: {
       'Authorization': `Bearer ${token}`,
-      ...form.getHeaders()
+      ...form.getHeaders(),
     },
     body: form.getBuffer(),
   });
