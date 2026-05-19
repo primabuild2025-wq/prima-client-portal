@@ -83,19 +83,19 @@ export default function DashboardPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-bg-page">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#11144C]" />
       </div>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen bg-bg-page">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <p className="text-status-error">Error: {error}</p>
+        <p className="text-red-500">Error: {error}</p>
       </div>
     </div>
   );
@@ -118,13 +118,13 @@ export default function DashboardPage() {
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
                 <button
-  onClick={() => window.location.href = '/projects'}
-  className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 text-left hover:border-[#11144C]/30 hover:bg-[#11144C]/5 transition group"
->
-  <p className="text-sm text-gray-500">{t('Total Projects', 'סה״כ פרויקטים')}</p>
-  <p className="mt-3 text-3xl font-bold text-[#11144C]">{data?.stats.totalProjects || 0}</p>
-  <p className="mt-2 text-xs text-gray-400 group-hover:text-[#11144C] transition">{t('View all →', 'הצג הכל →')}</p>
-</button>
+                  onClick={() => window.location.href = '/projects'}
+                  className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 text-left hover:border-[#11144C]/30 hover:bg-[#11144C]/5 transition group"
+                >
+                  <p className="text-sm text-gray-500">{t('Total Projects', 'סה״כ פרויקטים')}</p>
+                  <p className="mt-3 text-3xl font-bold text-[#11144C]">{data?.stats.totalProjects || 0}</p>
+                  <p className="mt-2 text-xs text-gray-400 group-hover:text-[#11144C] transition">{t('View all →', 'הצג הכל →')}</p>
+                </button>
 
                 <button
                   onClick={() => window.location.href = '/tasks'}
@@ -145,7 +145,7 @@ export default function DashboardPage() {
                 </button>
 
                 <button
-                  onClick={() => window.location.href = `/projects/${flag.project?.id}?tab=files&fileId=${flag.id}`}
+                  onClick={() => window.location.href = '/notifications'}
                   className="rounded-2xl border border-red-200 bg-red-50 p-5 text-left hover:bg-red-100 transition group"
                 >
                   <p className="text-sm text-gray-500">{t('Red Flags', 'דגלים אדומים')}</p>
