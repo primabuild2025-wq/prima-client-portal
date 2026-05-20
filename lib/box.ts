@@ -1,7 +1,14 @@
 const jwt = require('jsonwebtoken');
 
 function getConfig() {
-  const privateKey = process.env.BOX_JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const rawKey = process.env.BOX_JWT_PRIVATE_KEY;
+  console.log('BOX_CLIENT_ID:', process.env.BOX_CLIENT_ID?.slice(0, 8));
+  console.log('BOX_ENTERPRISE_ID:', process.env.BOX_ENTERPRISE_ID?.slice(0, 8));
+  console.log('BOX_JWT_KEY_ID:', process.env.BOX_JWT_KEY_ID?.slice(0, 8));
+  console.log('BOX_JWT_PASSPHRASE:', process.env.BOX_JWT_PASSPHRASE?.slice(0, 4));
+  console.log('KEY starts with:', rawKey?.substring(0, 40));
+  console.log('KEY ends with:', rawKey?.slice(-40));
+  const privateKey = rawKey?.replace(/\\n/g, '\n');
   if (!privateKey) throw new Error('BOX_JWT_PRIVATE_KEY is not set');
   return {
     boxAppSettings: {
