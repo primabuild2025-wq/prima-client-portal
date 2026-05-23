@@ -3,10 +3,7 @@ const jwt = require('jsonwebtoken');
 function getConfig() {
   const configJson = process.env.BOX_CONFIG_JSON;
   if (!configJson) throw new Error('BOX_CONFIG_JSON is not set');
-  const config = JSON.parse(configJson);
-  console.log('KEY LINE COUNT:', config.boxAppSettings.appAuth.privateKey.split('\n').length);
-  console.log('KEY START:', config.boxAppSettings.appAuth.privateKey.substring(0, 40));
-  return config;
+  return JSON.parse(configJson);
 }
 
 async function getAccessToken() {
