@@ -1,18 +1,11 @@
 const jwt = require('jsonwebtoken');
 
-const config = JSON.parse(configJson!);
-console.log('KEY LINE COUNT:', config.boxAppSettings.appAuth.privateKey.split('\n').length);
-console.log('KEY START:', config.boxAppSettings.appAuth.privateKey.substring(0, 40));
-
-
 function getConfig() {
   const configJson = process.env.BOX_CONFIG_JSON;
   if (!configJson) throw new Error('BOX_CONFIG_JSON is not set');
   const config = JSON.parse(configJson);
-  console.log('clientID:', config.boxAppSettings.clientID.slice(0, 8));
-  console.log('enterpriseID:', config.enterpriseID.slice(0, 8));
-  console.log('keyID:', config.boxAppSettings.appAuth.publicKeyID);
-  console.log('privateKey starts:', config.boxAppSettings.appAuth.privateKey.substring(0, 40));
+  console.log('KEY LINE COUNT:', config.boxAppSettings.appAuth.privateKey.split('\n').length);
+  console.log('KEY START:', config.boxAppSettings.appAuth.privateKey.substring(0, 40));
   return config;
 }
 
