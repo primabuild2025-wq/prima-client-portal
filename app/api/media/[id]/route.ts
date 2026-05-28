@@ -22,9 +22,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const type = new URL(request.url).searchParams.get('type') || 'embed';
-    const url = type === 'stream'
-      ? await getBoxDownloadUrl(params.id)
-      : await getBoxEmbedUrl(params.id);
+    const url = type === 'stream' || type === 'download'
+  ? await getBoxDownloadUrl(params.id)
+  : await getBoxEmbedUrl(params.id);
 
     return NextResponse.json({ url });
   } catch (err: any) {
