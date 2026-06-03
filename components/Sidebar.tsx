@@ -26,11 +26,16 @@ export default function Sidebar() {
     });
   }, []);
 
+  const EXTERNAL_ROLES = ['client', 'designer', 'supervisor'];
+  const isExternal = role ? EXTERNAL_ROLES.includes(role) : false;
+
   const navItems = [
-    { label: t('Dashboard', 'לוח בקרה'),  href: '/dashboard',     icon: '⬛' },
-    { label: t('Projects', 'פרויקטים'),   href: '/projects',      icon: '📁' },
-    { label: t('Tasks', 'משימות'),         href: '/tasks',         icon: '✅' },
-    { label: t('Notifications', 'התראות'), href: '/notifications', icon: '🔔' },
+    { label: t('Dashboard', 'לוח בקרה'), href: '/dashboard', icon: '⬛' },
+    { label: t('Projects', 'פרויקטים'),  href: '/projects',  icon: '📁' },
+    ...(!isExternal ? [
+      { label: t('Tasks', 'משימות'),         href: '/tasks',         icon: '✅' },
+      { label: t('Notifications', 'התראות'), href: '/notifications', icon: '🔔' },
+    ] : []),
     ...(role === 'admin' ? [{ label: t('Users', 'משתמשים'), href: '/admin/users', icon: '👥' }] : []),
   ];
 

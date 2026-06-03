@@ -1,6 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+const EXTERNAL_ROLES   = ['client', 'designer', 'supervisor'];
+const EXTERNAL_BLOCKED = ['/tasks', '/notifications', '/admin'];
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -26,15 +29,34 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  console.log('MIDDLEWARE:', request.nextUrl.pathname, user ? 'HAS USER: ' + user.email : 'NO USER');
 
+  // Redirect unauthenticated users to login
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
+  }
+
+  // Redirect external users away from internal pages
+  if (user) {
+    const { data: profile } = await supabase
+      .from('users').select('role').eq('id', user.id).single();
+
+    if (profile && EXTERNAL_ROLES.includes(profile.role)) {
+      const path = request.nextUrl.pathname;
+      if (EXTERNAL_BLOCKED.some(blocked => path.startsWith(blocked))) {
+        return NextResponse.redirect(new URL('/projects', request.url));
+      }
+    }
   }
 
   return supabaseResponse;
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/api/:path*'],
+  matcher: [
+    '/dashboard/:path*',
+    '/tasks/:path*',
+    '/notifications/:path*',
+    '/admin/:path*',
+    '/api/:path*',
+  ],
 };

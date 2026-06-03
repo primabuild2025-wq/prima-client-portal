@@ -7,12 +7,14 @@ import Sidebar from '@/components/Sidebar';
 import { useLang } from '@/lib/context/LanguageContext';
 import ProjectChecklist from '@/components/ProjectChecklist';
 
+const EXTERNAL_ROLES = ['client', 'designer', 'supervisor'];
+
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '' });
+  const [projects, setProjects]     = useState<any[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
+  const [showModal, setShowModal]   = useState(false);
+  const [form, setForm]             = useState({ name: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -53,7 +55,7 @@ export default function ProjectsPage() {
         .from('projects')
         .update({
           status: newStatus,
-          activated_at: newStatus === 'active' ? new Date().toISOString() : undefined
+          activated_at: newStatus === 'active' ? new Date().toISOString() : undefined,
         })
         .eq('id', id);
       if (error) throw error;
@@ -87,10 +89,10 @@ export default function ProjectsPage() {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case 'active':    return 'text-status-success bg-green-50 border-green-200';
-      case 'draft':     return 'text-status-warning bg-yellow-50 border-yellow-200';
-      case 'completed': return 'text-status-info bg-blue-50 border-blue-200';
-      default:          return 'text-text-secondary bg-gray-100 border-border';
+      case 'active':    return 'text-green-700 bg-green-50 border-green-200';
+      case 'draft':     return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+      case 'completed': return 'text-blue-700 bg-blue-50 border-blue-200';
+      default:          return 'text-gray-500 bg-gray-100 border-gray-200';
     }
   };
 
@@ -104,44 +106,55 @@ export default function ProjectsPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-bg-page">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#11144C]" />
       </div>
     </div>
   );
 
+  const isPrivileged = ['admin', 'management'].includes(currentUser?.role);
+  const isExternal   = EXTERNAL_ROLES.includes(currentUser?.role);
+
   return (
-    <div className="min-h-screen bg-bg-page">
+    <div className="min-h-screen bg-[#F5F6FA]">
       <Header />
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 px-4 md:px-6 pb-10 pt-6">
         <Sidebar />
         <section className="space-y-6">
-          <div className="rounded-3xl bg-bg-card border border-border shadow-sm p-8">
+          <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-text-primary">{t('Projects', 'פרויקטים')}</h2>
-                <p className="text-sm text-text-secondary">{t('Manage and track all projects.', 'נהל ועקוב אחר כל הפרויקטים.')}</p>
+                <h2 className="text-xl font-semibold text-gray-900">{t('Projects', 'פרויקטים')}</h2>
+                <p className="text-sm text-gray-500">
+                  {isExternal
+                    ? t('Your assigned projects.', 'הפרויקטים המוקצים לך.')
+                    : t('Manage and track all projects.', 'נהל ועקוב אחר כל הפרויקטים.')}
+                </p>
               </div>
-              {['admin', 'management'].includes(currentUser?.role) && (
+              {isPrivileged && (
                 <button
                   onClick={() => setShowModal(true)}
-                  className="rounded-full bg-accent text-accent-text px-5 py-2 text-sm font-semibold hover:opacity-90 transition"
+                  className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1a1f6e] transition"
                 >
                   {t('+ New Project', '+ פרויקט חדש')}
                 </button>
               )}
             </div>
 
-            {error && <p className="mb-4 text-sm text-status-error">{error}</p>}
+            {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
             {projects.length === 0 ? (
-              <div className="rounded-2xl border border-border bg-bg-page p-10 text-center">
-                <p className="text-text-secondary">{t('No projects yet.', 'אין פרויקטים עדיין.')}</p>
-                {['admin', 'management'].includes(currentUser?.role) && (
+              <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-10 text-center">
+                <p className="text-gray-400">
+                  {isExternal
+                    ? t('You have no assigned projects yet.', 'אין לך פרויקטים מוקצים עדיין.')
+                    : t('No projects yet.', 'אין פרויקטים עדיין.')}
+                </p>
+                {isPrivileged && (
                   <button onClick={() => setShowModal(true)}
-                    className="mt-4 rounded-full bg-accent text-accent-text px-5 py-2 text-sm font-semibold hover:opacity-90 transition">
+                    className="mt-4 rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1a1f6e] transition">
                     {t('Create your first project', 'צור את הפרויקט הראשון שלך')}
                   </button>
                 )}
@@ -152,36 +165,38 @@ export default function ProjectsPage() {
                   <div
                     key={project.id}
                     onClick={() => window.location.href = `/projects/${project.id}`}
-                    className="cursor-pointer rounded-2xl border border-border bg-bg-page p-6 space-y-3 hover:border-accent/30 hover:shadow-md transition"
+                    className="cursor-pointer rounded-2xl border border-gray-200 bg-[#F5F6FA] p-6 space-y-3 hover:border-[#11144C]/30 hover:shadow-md transition"
                   >
                     <div className="flex items-start justify-between">
-                      <h3 className="font-semibold text-text-primary">{project.name}</h3>
-                      {project.red_flag && <span className="text-status-error text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>}
+                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                      {project.red_flag && !isExternal && (
+                        <span className="text-red-500 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>
+                      )}
                     </div>
                     {project.description && (
-                      <p className="text-sm text-text-secondary line-clamp-2">{project.description}</p>
+                      <p className="text-sm text-gray-500 line-clamp-2">{project.description}</p>
                     )}
                     <div className="flex items-center justify-between">
                       <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusColor(project.status)}`}>
                         {statusLabel(project.status)}
                       </span>
-                      <span className="text-xs text-text-secondary">{new Date(project.created_at).toLocaleDateString()}</span>
+                      <span className="text-xs text-gray-400">{new Date(project.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex gap-3">
-                      <span className="text-xs text-text-secondary">
+                      <span className="text-xs text-gray-400">
                         🔲 {t('Not started', 'לא התחיל')}: {(project.tasks || []).filter((tk: any) => tk.status === 'not_started').length}
                       </span>
-                      <span className="text-xs text-status-warning">
+                      <span className="text-xs text-amber-600">
                         ⚡ {t('In progress', 'בתהליך')}: {(project.tasks || []).filter((tk: any) => tk.status === 'in_progress').length}
                       </span>
                     </div>
-                    {project.owner && (
-                      <p className="text-xs text-text-secondary">{t('Owner', 'בעלים')}: {project.owner.name}</p>
+                    {project.owner && !isExternal && (
+                      <p className="text-xs text-gray-400">{t('Owner', 'בעלים')}: {project.owner.name}</p>
                     )}
 
-                    {['admin', 'management'].includes(currentUser?.role) && (
+                    {isPrivileged && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <p className="w-full text-xs text-text-secondary mb-1">{t('Change Status', 'שנה סטטוס')}</p>
+                        <p className="w-full text-xs text-gray-400 mb-1">{t('Change Status', 'שנה סטטוס')}</p>
                         {['draft', 'active', 'completed'].map(status => (
                           <button
                             key={status}
@@ -190,7 +205,7 @@ export default function ProjectsPage() {
                             className={`rounded-full border px-3 py-1 text-xs font-medium transition capitalize ${
                               project.status === status
                                 ? statusColor(status)
-                                : 'border-border text-text-secondary hover:bg-bg-card'
+                                : 'border-gray-200 text-gray-500 hover:bg-gray-100'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             {statusLabel(status)}
@@ -201,11 +216,11 @@ export default function ProjectsPage() {
 
                     <ProjectChecklist
                       projectId={project.id}
-                      isPrivileged={['admin', 'management'].includes(currentUser?.role)}
+                      isPrivileged={isPrivileged}
                       minimal
                     />
 
-                    {project.box_folder_id && (
+                    {project.box_folder_id && !isExternal && (
                       <p className="text-xs text-gray-400">📦 {t('Box connected', 'Box מחובר')}</p>
                     )}
                   </div>

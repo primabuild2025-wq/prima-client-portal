@@ -54,19 +54,34 @@ function parseMediaFilename(filename: string): { displayName: string; descriptio
   return { displayName, description, uploadedAt };
 }
 
+const EXTERNAL_ROLES = ['client', 'designer', 'supervisor'];
+
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const id = params.id;
-  const [project, setProject]         = useState<any>(null);
-  const [tasks, setTasks]             = useState<any[]>([]);
+  const [project, setProject]                 = useState<any>(null);
+  const [tasks, setTasks]                     = useState<any[]>([]);
   const [translatedTasks, setTranslatedTasks] = useState<any[]>([]);
   const [translating, setTranslating]         = useState(false);
-  const [files, setFiles]             = useState<any[]>([]);
-  const [photos, setPhotos]           = useState<any[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState<string | null>(null);
-  const [activeTab, setActiveTab]     = useState<'tasks' | 'photos' | 'files' | 'checklist' | 'workmedia' | 'paperwork'>('tasks');
-  const [showUpload, setShowUpload]   = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [files, setFiles]                     = useState<any[]>([]);
+  const [photos, setPhotos]                   = useState<any[]>([]);
+  const [users, setUsers]                     = useState<any[]>([]);
+  const [members, setMembers]                 = useState<any[]>([]);
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState<string | null>(null);
+  const [activeTab, setActiveTab]             = useState<'tasks' | 'photos' | 'files' | 'checklist' | 'workmedia' | 'paperwork'>('tasks');
+  const [showUpload, setShowUpload]           = useState(false);
+  const [currentUser, setCurrentUser]         = useState<any>(null);
+
+  // Members state
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [memberToAdd, setMemberToAdd]     = useState('');
+  const [addingMember, setAddingMember]   = useState(false);
+
+  // New Task modal
+  const [showNewTask, setShowNewTask]               = useState(false);
+  const [newTaskForm, setNewTaskForm]               = useState({ title: '', description: '', assigneeId: '' });
+  const [newTaskError, setNewTaskError]             = useState<string | null>(null);
+  const [newTaskSubmitting, setNewTaskSubmitting]   = useState(false);
 
   const [workMedia, setWorkMedia]               = useState<{ category: string; url: string; name: string; path: string }[]>([]);
   const [loadingMedia, setLoadingMedia]         = useState(false);
@@ -88,21 +103,21 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const paperworkInputRef                               = useRef<HTMLInputElement>(null);
 
   const { t, lang, translateContent } = useLang();
-  const { deleteFile, deletePhoto } = useAdminDelete();
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { deleteFile, deletePhoto }   = useAdminDelete();
+  const [deletingId, setDeletingId]   = useState<string | null>(null);
 
   useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const tab = params.get('tab');
-  const fileId = params.get('fileId');
-  if (tab === 'files') setActiveTab('files');
-  if (fileId) {
-    setTimeout(() => {
-      const el = document.getElementById(`file-${fileId}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 500);
-  }
-}, []);
+    const p      = new URLSearchParams(window.location.search);
+    const tab    = p.get('tab');
+    const fileId = p.get('fileId');
+    if (tab === 'files') setActiveTab('files');
+    if (fileId) {
+      setTimeout(() => {
+        const el = document.getElementById(`file-${fileId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 500);
+    }
+  }, []);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -116,7 +131,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     const translateTasks = async () => {
       setTranslating(true);
       try {
-        const texts = tasks.map(task => task.title || '');
+        const texts      = tasks.map(task => task.title || '');
         const translated = await translateContent(texts);
         setTranslatedTasks(tasks.map((task, i) => ({
           ...task,
@@ -140,9 +155,24 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         .from('users').select('*').eq('id', session.user.id).single();
       setCurrentUser(user);
 
+      const isExternal   = EXTERNAL_ROLES.includes(user?.role);
       const isPrivileged = ['admin', 'management'].includes(user?.role);
 
-      const [projectRes, tasksRes, filesRes, photosRes] = await Promise.all([
+      // External users: check they are a member of this project
+      if (isExternal) {
+        const { data: membership } = await supabase
+          .from('project_members')
+          .select('project_id')
+          .eq('project_id', id)
+          .eq('user_id', session.user.id)
+          .single();
+        if (!membership) {
+          window.location.href = '/projects';
+          return;
+        }
+      }
+
+      const [projectRes, tasksRes, filesRes, photosRes, usersRes, membersRes] = await Promise.all([
         supabase.from('projects')
           .select('*, owner:users!owner_id(name, email)')
           .eq('id', id).single(),
@@ -156,9 +186,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               .or('pending_approval.eq.false,pending_approval.is.null')
               .order('created_at', { ascending: false }),
         supabase.from('photos').select('*').eq('project_id', id).order('created_at', { ascending: false }),
+        supabase.from('users').select('id, name, email, role').order('name'),
+        supabase.from('project_members')
+          .select('*, user:users(id, name, email, role)')
+          .eq('project_id', id),
       ]);
 
       setProject(projectRes.data);
+      setUsers(usersRes.data || []);
+      setMembers(membersRes.data?.map((m: any) => m.user).filter(Boolean) || []);
 
       const statusOrder: Record<string, number> = { not_started: 0, in_progress: 1, completed: 2, blocked: 3 };
       const sortedTasks = (tasksRes.data || []).sort((a: any, b: any) => {
@@ -174,6 +210,61 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!memberToAdd) return;
+    setAddingMember(true);
+    try {
+      const { error } = await supabase.from('project_members')
+        .insert({ project_id: id, user_id: memberToAdd });
+      if (error) throw error;
+      setMemberToAdd('');
+      setShowAddMember(false);
+      loadData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!confirm(t('Remove this member?', 'להסיר משתמש זה?'))) return;
+    const { error } = await supabase.from('project_members')
+      .delete().eq('project_id', id).eq('user_id', userId);
+    if (!error) setMembers(prev => prev.filter(m => m.id !== userId));
+  };
+
+  const handleCreateTask = async () => {
+    if (!newTaskForm.title.trim()) {
+      setNewTaskError(t('Title is required.', 'כותרת היא שדה חובה.'));
+      return;
+    }
+    setNewTaskSubmitting(true);
+    setNewTaskError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/tasks', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body:    JSON.stringify({
+          projectId:   id,
+          title:       newTaskForm.title,
+          description: newTaskForm.description,
+          assigneeId:  newTaskForm.assigneeId || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setShowNewTask(false);
+      setNewTaskForm({ title: '', description: '', assigneeId: '' });
+      loadData();
+    } catch (err: any) {
+      setNewTaskError(err.message);
+    } finally {
+      setNewTaskSubmitting(false);
     }
   };
 
@@ -336,7 +427,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const updateStatus = async (newStatus: string) => {
     try {
       const { error } = await supabase.from('projects').update({
-        status: newStatus,
+        status:       newStatus,
         activated_at: newStatus === 'active' ? new Date().toISOString() : undefined,
       }).eq('id', id);
       if (error) throw error;
@@ -364,13 +455,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     </div>
   );
 
-  const isPrivileged = ['admin', 'management'].includes(currentUser?.role);
+  const isPrivileged    = ['admin', 'management'].includes(currentUser?.role);
+  const isExternal      = EXTERNAL_ROLES.includes(currentUser?.role);
   const mediaByCategory = MEDIA_CATEGORIES.reduce((acc, cat) => {
     acc[cat] = workMedia.filter(m => m.category === cat);
     return acc;
   }, {} as Record<string, typeof workMedia>);
 
-  const displayedTasks = translatedTasks.length > 0 ? translatedTasks : tasks;
+  const displayedTasks  = translatedTasks.length > 0 ? translatedTasks : tasks;
+  const externalUsers   = users.filter(u => EXTERNAL_ROLES.includes(u.role) && !members.find(m => m.id === u.id));
 
   return (
     <div className="min-h-screen bg-[#F5F6FA]">
@@ -382,7 +475,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           {/* Project Header */}
           <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
             <div className="flex items-start justify-between">
-              <div>
+              <div className="flex-1">
                 <button
                   onClick={() => window.location.href = '/projects'}
                   className="text-gray-400 hover:text-[#11144C] text-sm transition"
@@ -424,11 +517,71 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     ))}
                   </div>
                 )}
+
+                {/* Members section — admin only */}
+                {isPrivileged && (
+                  <div className="mt-5 pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('Project Members', 'חברי פרויקט')}</p>
+                      <button
+                        onClick={() => setShowAddMember(!showAddMember)}
+                        className="text-xs text-[#11144C] hover:underline"
+                      >
+                        + {t('Add', 'הוסף')}
+                      </button>
+                    </div>
+
+                    {showAddMember && (
+                      <div className="flex gap-2 mb-3">
+                        <select
+                          value={memberToAdd}
+                          onChange={e => setMemberToAdd(e.target.value)}
+                          className="flex-1 rounded-xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30"
+                        >
+                          <option value="">{t('Select user...', 'בחר משתמש...')}</option>
+                          {externalUsers.map(u => (
+                            <option key={u.id} value={u.id}>{u.name} · {u.role}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={handleAddMember}
+                          disabled={!memberToAdd || addingMember}
+                          className="rounded-xl bg-[#11144C] px-3 py-2 text-xs font-semibold text-white hover:bg-[#11144C]/90 transition disabled:opacity-50"
+                        >
+                          {addingMember ? '…' : t('Add', 'הוסף')}
+                        </button>
+                        <button
+                          onClick={() => { setShowAddMember(false); setMemberToAdd(''); }}
+                          className="rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition"
+                        >
+                          {t('Cancel', 'ביטול')}
+                        </button>
+                      </div>
+                    )}
+
+                    {members.length === 0 ? (
+                      <p className="text-xs text-gray-400">{t('No external members yet.', 'אין חברים חיצוניים עדיין.')}</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {members.map(member => (
+                          <div key={member.id} className="flex items-center gap-1 rounded-full border border-gray-200 bg-[#F5F6FA] px-3 py-1.5">
+                            <span className="text-xs text-gray-700 font-medium">{member.name}</span>
+                            <span className="text-xs text-gray-400">· {member.role}</span>
+                            <button
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="ml-1 text-gray-300 hover:text-red-500 transition text-xs leading-none"
+                            >✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <button
                 onClick={() => setShowUpload(!showUpload)}
-                className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
+                className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition ml-4 shrink-0"
               >
                 + {t('Upload', 'העלה')}
               </button>
@@ -474,11 +627,33 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
             <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8 space-y-3">
-              {translating && (
-                <p className="text-xs text-gray-400 text-right">{t('Translating…', 'מתרגם…')}</p>
-              )}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-gray-900">{t('Tasks', 'משימות')}</h3>
+                  {translating && <span className="text-xs text-gray-400">{t('Translating…', 'מתרגם…')}</span>}
+                </div>
+                {isPrivileged && (
+                  <button
+                    onClick={() => { setShowNewTask(true); setNewTaskForm({ title: '', description: '', assigneeId: '' }); setNewTaskError(null); }}
+                    className="rounded-full bg-[#11144C] px-4 py-2 text-xs font-semibold text-white hover:bg-[#11144C]/90 transition"
+                  >
+                    + {t('New Task', 'משימה חדשה')}
+                  </button>
+                )}
+              </div>
+
               {tasks.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">{t('No tasks yet.', 'אין משימות עדיין.')}</p>
+                <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-10 text-center">
+                  <p className="text-gray-400 mb-4">{t('No tasks yet.', 'אין משימות עדיין.')}</p>
+                  {isPrivileged && (
+                    <button
+                      onClick={() => { setShowNewTask(true); setNewTaskForm({ title: '', description: '', assigneeId: '' }); setNewTaskError(null); }}
+                      className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
+                    >
+                      + {t('Create first task', 'צור משימה ראשונה')}
+                    </button>
+                  )}
+                </div>
               ) : displayedTasks.map(task => (
                 <div
                   key={task.id}
@@ -554,11 +729,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   {t('No files yet. Click Upload to add files.', 'אין קבצים עדיין. לחץ על העלה להוספת קבצים.')}
                 </p>
               ) : pdfFiles.map(file => (
-                <div className={`rounded-2xl border bg-[#F5F6FA] p-5 space-y-3 transition ${
-  new URLSearchParams(window.location.search).get('fileId') === file.id
-    ? 'border-red-300 bg-red-50'
-    : 'border-gray-200 bg-[#F5F6FA]'
-}`}>
+                <div
+                  key={file.id}
+                  id={`file-${file.id}`}
+                  className={`rounded-2xl border p-5 space-y-3 transition ${
+                    new URLSearchParams(window.location.search).get('fileId') === file.id
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-gray-200 bg-[#F5F6FA]'
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900">{file.description}</p>
@@ -743,6 +922,57 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
         </section>
       </div>
+
+      {/* New Task Modal */}
+      {showNewTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-gray-200 shadow-2xl p-8 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">✅ {t('New Task', 'משימה חדשה')}</h3>
+              <button onClick={() => setShowNewTask(false)} className="text-gray-400 hover:text-gray-900 transition text-lg">✕</button>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                {t('Title', 'כותרת')} <span className="text-red-500">*</span>
+              </label>
+              <input type="text" value={newTaskForm.title}
+                onChange={e => setNewTaskForm({ ...newTaskForm, title: e.target.value })}
+                placeholder={t('Task title', 'כותרת המשימה')}
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400" />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Assignee', 'אחראי')}</label>
+              <select value={newTaskForm.assigneeId}
+                onChange={e => setNewTaskForm({ ...newTaskForm, assigneeId: e.target.value })}
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30">
+                <option value="">{t('Unassigned', 'לא מוקצה')}</option>
+                {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                {t('Description', 'תיאור')} <span className="text-gray-400 font-normal">({t('optional', 'אופציונלי')})</span>
+              </label>
+              <textarea value={newTaskForm.description}
+                onChange={e => setNewTaskForm({ ...newTaskForm, description: e.target.value })}
+                placeholder={t('Optional description', 'תיאור אופציונלי')}
+                rows={3}
+                className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400 resize-none" />
+            </div>
+            {newTaskError && <p className="text-sm text-red-500">{newTaskError}</p>}
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setShowNewTask(false)}
+                className="flex-1 rounded-full border border-gray-200 px-5 py-3 text-sm text-gray-600 hover:bg-gray-100 transition">
+                {t('Cancel', 'ביטול')}
+              </button>
+              <button onClick={handleCreateTask} disabled={newTaskSubmitting}
+                className="flex-1 rounded-full bg-[#11144C] px-5 py-3 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition disabled:opacity-50">
+                {newTaskSubmitting ? t('Creating…', 'יוצר…') : t('Create Task', 'צור משימה')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Work Media Upload Modal */}
       {showMediaUpload && (
