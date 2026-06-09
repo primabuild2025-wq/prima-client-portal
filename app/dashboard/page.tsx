@@ -50,7 +50,7 @@ export default function DashboardPage() {
       if (isExternal) {
         // External users: only load their assigned projects
         const { data: memberProjects } = await supabase
-          .from('project_members')
+          .from('project_assignments')
           .select('project:projects(*, tasks(id, status))')
           .eq('user_id', session.user.id);
 

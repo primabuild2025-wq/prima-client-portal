@@ -164,7 +164,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       if (isExternal) {
         const { data: membership } = await supabase
-          .from('project_members')
+          .from('project_assignments')
           .select('project_id')
           .eq('project_id', id)
           .eq('user_id', session.user.id)
@@ -187,7 +187,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               .order('created_at', { ascending: false }),
         supabase.from('photos').select('*').eq('project_id', id).order('created_at', { ascending: false }),
         supabase.from('users').select('id, name, email, role').order('name'),
-        supabase.from('project_members')
+        supabase.from('project_assignments')
           .select('*, user:users(id, name, email, role)')
           .eq('project_id', id),
       ]);
@@ -220,6 +220,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       const response = await fetch(`/api/projects/${id}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ userId: memberToAdd }),
       });
       const data = await response.json();
@@ -239,6 +240,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     try {
       const response = await fetch(`/api/projects/${id}/members?userId=${encodeURIComponent(userId)}`, {
         method: 'DELETE',
+        credentials: 'same-origin',
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to remove member');

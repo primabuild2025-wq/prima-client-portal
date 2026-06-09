@@ -33,15 +33,27 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
   }
 
+  const { data: userToAdd, error: userError } = await supabaseAdmin
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+
+  if (userError || !userToAdd) {
+    return NextResponse.json({ error: userError?.message || 'User not found' }, { status: 400 });
+  }
+
   const { data, error } = await supabaseAdmin
-    .from('project_members')
-    .insert({ project_id: params.id, user_id: userId });
+    .from('project_assignments')
+    .insert({ project_id: params.id, user_id: userId, role: userToAdd.role })
+    .select()
+    .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ member: data?.[0] || null });
+  return NextResponse.json({ member: data || null });
 }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
@@ -57,7 +69,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 
   const { error } = await supabaseAdmin
-    .from('project_members')
+    .from('project_assignments')
     .delete()
     .eq('project_id', params.id)
     .eq('user_id', userId);
