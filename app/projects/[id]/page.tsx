@@ -11,14 +11,18 @@ import { useAdminDelete } from '@/lib/hooks/useAdminDelete';
 import ProjectChecklist from '@/components/ProjectChecklist';
 
 const MEDIA_CATEGORIES = [
-  'Plumbing',
-  'Electric',
-  'Prep for Waterproof',
-  'Fail Pt',
-  'Drains',
-  'Drain Video',
-  'General',
+  { en: 'Plumbing',            he: 'אינסטלציה' },
+  { en: 'Electric',            he: 'חשמל' },
+  { en: 'Prep for Waterproof', he: 'הכנה לאיטום' },
+  { en: 'Fail Pt',             he: 'נקודת כשל' },
+  { en: 'Drains',              he: 'ניקוזים' },
+  { en: 'Drain Video',         he: 'סרטון ניקוז' },
+  { en: 'General',             he: 'כללי' },
 ];
+
+function categoryLabel(cat: { en: string; he: string }, lang: string) {
+  return lang === 'HE' ? cat.he : cat.en;
+}
 
 function encodeMediaFilename(originalName: string, description: string): string {
   const ts   = Date.now();
@@ -78,10 +82,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [addingMember, setAddingMember]   = useState(false);
 
   // New Task modal
-  const [showNewTask, setShowNewTask]               = useState(false);
-  const [newTaskForm, setNewTaskForm]               = useState({ title: '', description: '', assigneeId: '' });
-  const [newTaskError, setNewTaskError]             = useState<string | null>(null);
-  const [newTaskSubmitting, setNewTaskSubmitting]   = useState(false);
+  const [showNewTask, setShowNewTask]             = useState(false);
+  const [newTaskForm, setNewTaskForm]             = useState({ title: '', description: '', assigneeId: '' });
+  const [newTaskError, setNewTaskError]           = useState<string | null>(null);
+  const [newTaskSubmitting, setNewTaskSubmitting] = useState(false);
 
   const [workMedia, setWorkMedia]               = useState<{ category: string; url: string; name: string; path: string }[]>([]);
   const [loadingMedia, setLoadingMedia]         = useState(false);
@@ -158,7 +162,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       const isExternal   = EXTERNAL_ROLES.includes(user?.role);
       const isPrivileged = ['admin', 'management'].includes(user?.role);
 
-      // External users: check they are a member of this project
       if (isExternal) {
         const { data: membership } = await supabase
           .from('project_members')
@@ -166,10 +169,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           .eq('project_id', id)
           .eq('user_id', session.user.id)
           .single();
-        if (!membership) {
-          window.location.href = '/projects';
-          return;
-        }
+        if (!membership) { window.location.href = '/projects'; return; }
       }
 
       const [projectRes, tasksRes, filesRes, photosRes, usersRes, membersRes] = await Promise.all([
@@ -217,9 +217,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     if (!memberToAdd) return;
     setAddingMember(true);
     try {
-      const { error } = await supabase.from('project_members')
-        .insert({ project_id: id, user_id: memberToAdd });
-      if (error) throw error;
+      const response = await fetch(`/api/projects/${id}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: memberToAdd }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to add member');
       setMemberToAdd('');
       setShowAddMember(false);
       loadData();
@@ -232,16 +236,20 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   const handleRemoveMember = async (userId: string) => {
     if (!confirm(t('Remove this member?', 'להסיר משתמש זה?'))) return;
-    const { error } = await supabase.from('project_members')
-      .delete().eq('project_id', id).eq('user_id', userId);
-    if (!error) setMembers(prev => prev.filter(m => m.id !== userId));
+    try {
+      const response = await fetch(`/api/projects/${id}/members?userId=${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to remove member');
+      setMembers(prev => prev.filter(m => m.id !== userId));
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   const handleCreateTask = async () => {
-    if (!newTaskForm.title.trim()) {
-      setNewTaskError(t('Title is required.', 'כותרת היא שדה חובה.'));
-      return;
-    }
+    if (!newTaskForm.title.trim()) { setNewTaskError(t('Title is required.', 'כותרת היא שדה חובה.')); return; }
     setNewTaskSubmitting(true);
     setNewTaskError(null);
     try {
@@ -272,14 +280,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     setLoadingMedia(true);
     try {
       const allMedia: { category: string; url: string; name: string; path: string }[] = [];
-      for (const category of MEDIA_CATEGORIES) {
-        const prefix = `projects/${id}/work-media/${category}/`;
+      for (const cat of MEDIA_CATEGORIES) {
+        const prefix = `projects/${id}/work-media/${cat.en}/`;
         const { data: items } = await supabase.storage.from('project-media').list(prefix);
         if (items) {
           for (const item of items) {
             const path = `${prefix}${item.name}`;
             const { data: urlData } = supabase.storage.from('project-media').getPublicUrl(path);
-            allMedia.push({ category, url: urlData.publicUrl, name: item.name, path });
+            allMedia.push({ category: cat.en, url: urlData.publicUrl, name: item.name, path });
           }
         }
       }
@@ -329,18 +337,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
-
       const formData = new FormData();
       formData.append('file', paperworkFile);
       formData.append('projectId', id);
       formData.append('description', paperworkDescription.substring(0, 20));
       formData.append('uploadedAt', new Date().toISOString());
       formData.append('fileType', 'paperwork');
-
       const res  = await fetch('/api/media/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-
       setPaperworkSuccess(true);
       setTimeout(() => {
         setShowPaperworkUpload(false);
@@ -456,9 +461,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   );
 
   const isPrivileged    = ['admin', 'management'].includes(currentUser?.role);
-  const isExternal      = EXTERNAL_ROLES.includes(currentUser?.role);
   const mediaByCategory = MEDIA_CATEGORIES.reduce((acc, cat) => {
-    acc[cat] = workMedia.filter(m => m.category === cat);
+    acc[cat.en] = workMedia.filter(m => m.category === cat.en);
     return acc;
   }, {} as Record<string, typeof workMedia>);
 
@@ -483,19 +487,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   ← {t('Projects', 'פרויקטים')}
                 </button>
                 <h1 className="mt-2 text-2xl font-semibold text-gray-900">{project.name}</h1>
-                {project.description && (
-                  <p className="mt-1 text-gray-500">{project.description}</p>
-                )}
+                {project.description && <p className="mt-1 text-gray-500">{project.description}</p>}
                 <div className="mt-3 flex items-center gap-3">
                   <span className={`rounded-full border px-3 py-1 text-xs font-medium ${projectStatusColor(project.status)}`}>
                     {statusLabel(project.status)}
                   </span>
-                  {project.red_flag && (
-                    <span className="text-red-500 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>
-                  )}
-                  {project.box_folder_id && (
-                    <span className="text-gray-400 text-xs">📦 {t('Box connected', 'Box מחובר')}</span>
-                  )}
+                  {project.red_flag && <span className="text-red-500 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>}
+                  {project.box_folder_id && <span className="text-gray-400 text-xs">📦 {t('Box connected', 'Box מחובר')}</span>}
                 </div>
 
                 {isPrivileged && (
@@ -523,42 +521,29 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   <div className="mt-5 pt-4 border-t border-gray-100">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('Project Members', 'חברי פרויקט')}</p>
-                      <button
-                        onClick={() => setShowAddMember(!showAddMember)}
-                        className="text-xs text-[#11144C] hover:underline"
-                      >
+                      <button onClick={() => setShowAddMember(!showAddMember)} className="text-xs text-[#11144C] hover:underline">
                         + {t('Add', 'הוסף')}
                       </button>
                     </div>
-
                     {showAddMember && (
                       <div className="flex gap-2 mb-3">
-                        <select
-                          value={memberToAdd}
-                          onChange={e => setMemberToAdd(e.target.value)}
-                          className="flex-1 rounded-xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30"
-                        >
+                        <select value={memberToAdd} onChange={e => setMemberToAdd(e.target.value)}
+                          className="flex-1 rounded-xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30">
                           <option value="">{t('Select user...', 'בחר משתמש...')}</option>
                           {externalUsers.map(u => (
                             <option key={u.id} value={u.id}>{u.name} · {u.role}</option>
                           ))}
                         </select>
-                        <button
-                          onClick={handleAddMember}
-                          disabled={!memberToAdd || addingMember}
-                          className="rounded-xl bg-[#11144C] px-3 py-2 text-xs font-semibold text-white hover:bg-[#11144C]/90 transition disabled:opacity-50"
-                        >
+                        <button onClick={handleAddMember} disabled={!memberToAdd || addingMember}
+                          className="rounded-xl bg-[#11144C] px-3 py-2 text-xs font-semibold text-white hover:bg-[#11144C]/90 transition disabled:opacity-50">
                           {addingMember ? '…' : t('Add', 'הוסף')}
                         </button>
-                        <button
-                          onClick={() => { setShowAddMember(false); setMemberToAdd(''); }}
-                          className="rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition"
-                        >
+                        <button onClick={() => { setShowAddMember(false); setMemberToAdd(''); }}
+                          className="rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 transition">
                           {t('Cancel', 'ביטול')}
                         </button>
                       </div>
                     )}
-
                     {members.length === 0 ? (
                       <p className="text-xs text-gray-400">{t('No external members yet.', 'אין חברים חיצוניים עדיין.')}</p>
                     ) : (
@@ -567,10 +552,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                           <div key={member.id} className="flex items-center gap-1 rounded-full border border-gray-200 bg-[#F5F6FA] px-3 py-1.5">
                             <span className="text-xs text-gray-700 font-medium">{member.name}</span>
                             <span className="text-xs text-gray-400">· {member.role}</span>
-                            <button
-                              onClick={() => handleRemoveMember(member.id)}
-                              className="ml-1 text-gray-300 hover:text-red-500 transition text-xs leading-none"
-                            >✕</button>
+                            <button onClick={() => handleRemoveMember(member.id)}
+                              className="ml-1 text-gray-300 hover:text-red-500 transition text-xs leading-none">✕</button>
                           </div>
                         ))}
                       </div>
@@ -589,10 +572,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
             {showUpload && (
               <div className="mt-6 rounded-2xl border border-gray-200 bg-[#F5F6FA] p-6">
-                <MediaUpload
-                  projectId={id}
-                  onUploadComplete={() => { loadData(); setShowUpload(false); }}
-                />
+                <MediaUpload projectId={id} onUploadComplete={() => { loadData(); setShowUpload(false); }} />
               </div>
             )}
           </div>
@@ -600,26 +580,16 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           {/* Tabs */}
           <div className="flex gap-2 flex-wrap">
             {(['tasks', 'photos', 'files', 'paperwork', 'checklist', 'workmedia'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+              <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`rounded-full px-5 py-2 text-sm font-medium transition ${
-                  activeTab === tab
-                    ? 'bg-[#11144C] text-white'
-                    : 'border border-gray-200 text-gray-600 hover:bg-[#11144C]/5 hover:border-[#11144C]/30'
-                }`}
-              >
-                {tab === 'tasks'
-                  ? `${t('Tasks', 'משימות')} (${tasks.length})`
-                  : tab === 'photos'
-                  ? `${t('Photos', 'תמונות')} (${photos.length + videoFiles.length})`
-                  : tab === 'files'
-                  ? `${t('Files', 'קבצים')} (${pdfFiles.length})`
-                  : tab === 'paperwork'
-                  ? `${t('Paperwork', 'ניירת')}${paperworkFiles.length > 0 ? ` (${paperworkFiles.length})` : ''}`
-                  : tab === 'checklist'
-                  ? t('Mile Stones', 'אבני דרך')
-                  : `${t('Work Media', 'מדיית עבודה')}${workMedia.length > 0 ? ` (${workMedia.length})` : ''}`}
+                  activeTab === tab ? 'bg-[#11144C] text-white' : 'border border-gray-200 text-gray-600 hover:bg-[#11144C]/5 hover:border-[#11144C]/30'
+                }`}>
+                {tab === 'tasks'     ? `${t('Tasks', 'משימות')} (${tasks.length})`
+                : tab === 'photos'   ? `${t('Photos', 'תמונות')} (${photos.length + videoFiles.length})`
+                : tab === 'files'    ? `${t('Files', 'קבצים')} (${pdfFiles.length})`
+                : tab === 'paperwork'? `${t('Paperwork', 'ניירת')}${paperworkFiles.length > 0 ? ` (${paperworkFiles.length})` : ''}`
+                : tab === 'checklist'? t('Mile Stones', 'אבני דרך')
+                : `${t('Work Media', 'מדיית עבודה')}${workMedia.length > 0 ? ` (${workMedia.length})` : ''}`}
               </button>
             ))}
           </div>
@@ -633,38 +603,29 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   {translating && <span className="text-xs text-gray-400">{t('Translating…', 'מתרגם…')}</span>}
                 </div>
                 {isPrivileged && (
-                  <button
-                    onClick={() => { setShowNewTask(true); setNewTaskForm({ title: '', description: '', assigneeId: '' }); setNewTaskError(null); }}
-                    className="rounded-full bg-[#11144C] px-4 py-2 text-xs font-semibold text-white hover:bg-[#11144C]/90 transition"
-                  >
+                  <button onClick={() => { setShowNewTask(true); setNewTaskForm({ title: '', description: '', assigneeId: '' }); setNewTaskError(null); }}
+                    className="rounded-full bg-[#11144C] px-4 py-2 text-xs font-semibold text-white hover:bg-[#11144C]/90 transition">
                     + {t('New Task', 'משימה חדשה')}
                   </button>
                 )}
               </div>
-
               {tasks.length === 0 ? (
                 <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-10 text-center">
                   <p className="text-gray-400 mb-4">{t('No tasks yet.', 'אין משימות עדיין.')}</p>
                   {isPrivileged && (
-                    <button
-                      onClick={() => { setShowNewTask(true); setNewTaskForm({ title: '', description: '', assigneeId: '' }); setNewTaskError(null); }}
-                      className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
-                    >
+                    <button onClick={() => { setShowNewTask(true); setNewTaskForm({ title: '', description: '', assigneeId: '' }); setNewTaskError(null); }}
+                      className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition">
                       + {t('Create first task', 'צור משימה ראשונה')}
                     </button>
                   )}
                 </div>
               ) : displayedTasks.map(task => (
-                <div
-                  key={task.id}
+                <div key={task.id}
                   onClick={() => window.location.href = `/projects/${id}/tasks/${task.id}`}
-                  className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 flex items-center justify-between cursor-pointer hover:border-[#11144C]/30 hover:bg-[#11144C]/5 transition"
-                >
+                  className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-5 flex items-center justify-between cursor-pointer hover:border-[#11144C]/30 hover:bg-[#11144C]/5 transition">
                   <div>
                     <p className="font-medium text-gray-900">{task.title}</p>
-                    {task.assignee && (
-                      <p className="text-xs text-gray-400 mt-1">👤 {task.assignee.name}</p>
-                    )}
+                    {task.assignee && <p className="text-xs text-gray-400 mt-1">👤 {task.assignee.name}</p>}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusColor(task.status)}`}>
@@ -681,21 +642,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           {activeTab === 'photos' && (
             <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
               {photos.length === 0 && videoFiles.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">
-                  {t('No photos yet. Click Upload to add photos.', 'אין תמונות עדיין. לחץ על העלה להוספת תמונות.')}
-                </p>
+                <p className="text-center text-gray-400 py-8">{t('No photos yet. Click Upload to add photos.', 'אין תמונות עדיין. לחץ על העלה להוספת תמונות.')}</p>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {photos.map(photo => (
                     <div key={photo.id} className="relative group">
-                      <MediaViewer boxFileId={photo.url} mediaType="photo"
-                        fileName={photo.metadata?.original_name} uploadedAt={photo.uploaded_at} />
+                      <MediaViewer boxFileId={photo.url} mediaType="photo" fileName={photo.metadata?.original_name} uploadedAt={photo.uploaded_at} />
                       {isPrivileged && (
-                        <button
-                          onClick={() => handleDeletePhoto(photo.id)}
-                          disabled={deletingId === photo.id}
-                          className="absolute top-2 right-2 rounded-full bg-red-500/80 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition disabled:opacity-50"
-                        >
+                        <button onClick={() => handleDeletePhoto(photo.id)} disabled={deletingId === photo.id}
+                          className="absolute top-2 right-2 rounded-full bg-red-500/80 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition disabled:opacity-50">
                           {deletingId === photo.id ? '…' : t('Delete', 'מחק')}
                         </button>
                       )}
@@ -703,14 +658,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   ))}
                   {videoFiles.map(video => (
                     <div key={video.id} className="relative group">
-                      <MediaViewer boxFileId={video.object_key} mediaType="video"
-                        fileName={video.description} uploadedAt={video.uploaded_at} />
+                      <MediaViewer boxFileId={video.object_key} mediaType="video" fileName={video.description} uploadedAt={video.uploaded_at} />
                       {isPrivileged && (
-                        <button
-                          onClick={() => handleDeleteFile(video.id)}
-                          disabled={deletingId === video.id}
-                          className="absolute top-2 right-2 rounded-full bg-red-500/80 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition disabled:opacity-50"
-                        >
+                        <button onClick={() => handleDeleteFile(video.id)} disabled={deletingId === video.id}
+                          className="absolute top-2 right-2 rounded-full bg-red-500/80 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition disabled:opacity-50">
                           {deletingId === video.id ? '…' : t('Delete', 'מחק')}
                         </button>
                       )}
@@ -725,52 +676,36 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           {activeTab === 'files' && (
             <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8 space-y-3">
               {pdfFiles.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">
-                  {t('No files yet. Click Upload to add files.', 'אין קבצים עדיין. לחץ על העלה להוספת קבצים.')}
-                </p>
+                <p className="text-center text-gray-400 py-8">{t('No files yet. Click Upload to add files.', 'אין קבצים עדיין. לחץ על העלה להוספת קבצים.')}</p>
               ) : pdfFiles.map(file => (
-                <div
-                  key={file.id}
-                  id={`file-${file.id}`}
+                <div key={file.id} id={`file-${file.id}`}
                   className={`rounded-2xl border p-5 space-y-3 transition ${
                     new URLSearchParams(window.location.search).get('fileId') === file.id
-                      ? 'border-red-300 bg-red-50'
-                      : 'border-gray-200 bg-[#F5F6FA]'
-                  }`}
-                >
+                      ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-[#F5F6FA]'
+                  }`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900">{file.description}</p>
                       {file.category && (
-                        <span className="inline-block mt-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-                          {file.category}
-                        </span>
+                        <span className="inline-block mt-1 rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{file.category}</span>
                       )}
                       <p className="text-xs text-gray-400 mt-1">{file.mime_type} · {(file.size / 1024).toFixed(1)} KB</p>
                       {file.pending_approval && !file.approval_note && isPrivileged && (
                         <p className="text-xs text-amber-600 mt-1">⏳ {t('Waiting for approval', 'ממתין לאישור')}</p>
                       )}
                       {file.approval_note && (
-                        <p className="text-xs text-green-600 mt-1">
-                          ✓ {t('Approved', 'אושר')} · {file.approval_note.split('\n')[0].replace(/[\[\]]/g, '')}
-                        </p>
+                        <p className="text-xs text-green-600 mt-1">✓ {t('Approved', 'אושר')} · {file.approval_note.split('\n')[0].replace(/[\[\]]/g, '')}</p>
                       )}
                     </div>
-                    {file.red_flag && (
-                      <span className="text-red-500 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>
-                    )}
+                    {file.red_flag && <span className="text-red-500 text-xs">🚩 {t('Red Flag', 'דגל אדום')}</span>}
                   </div>
                   {isPrivileged && (
-                    <button
-                      onClick={() => handleDeleteFile(file.id)}
-                      disabled={deletingId === file.id}
-                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs text-red-500 hover:bg-red-100 transition disabled:opacity-50"
-                    >
+                    <button onClick={() => handleDeleteFile(file.id)} disabled={deletingId === file.id}
+                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs text-red-500 hover:bg-red-100 transition disabled:opacity-50">
                       {deletingId === file.id ? '…' : t('Delete', 'מחק')}
                     </button>
                   )}
-                  <MediaViewer boxFileId={file.object_key} mediaType="document"
-                    fileName={file.description} uploadedAt={file.uploaded_at} />
+                  <MediaViewer boxFileId={file.object_key} mediaType="document" fileName={file.description} uploadedAt={file.uploaded_at} />
                 </div>
               ))}
             </div>
@@ -785,23 +720,18 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   <p className="text-sm text-gray-500 mt-0.5">{t('Contracts, permits, and other documents', 'חוזים, היתרים ומסמכים אחרים')}</p>
                 </div>
                 {isPrivileged && (
-                  <button
-                    onClick={() => { setShowPaperworkUpload(true); setPaperworkDescription(''); setPaperworkFile(null); setPaperworkError(null); setPaperworkSuccess(false); }}
-                    className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
-                  >
+                  <button onClick={() => { setShowPaperworkUpload(true); setPaperworkDescription(''); setPaperworkFile(null); setPaperworkError(null); setPaperworkSuccess(false); }}
+                    className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition">
                     + {t('Upload', 'העלה')}
                   </button>
                 )}
               </div>
-
               {paperworkFiles.length === 0 ? (
                 <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-10 text-center">
                   <p className="text-gray-400 mb-4">{t('No paperwork yet.', 'אין ניירת עדיין.')}</p>
                   {isPrivileged && (
-                    <button
-                      onClick={() => { setShowPaperworkUpload(true); setPaperworkDescription(''); setPaperworkFile(null); setPaperworkError(null); setPaperworkSuccess(false); }}
-                      className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
-                    >
+                    <button onClick={() => { setShowPaperworkUpload(true); setPaperworkDescription(''); setPaperworkFile(null); setPaperworkError(null); setPaperworkSuccess(false); }}
+                      className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition">
                       + {t('Upload first document', 'העלה מסמך ראשון')}
                     </button>
                   )}
@@ -813,23 +743,17 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                       <p className="font-medium text-gray-900">{file.description}</p>
                       <p className="text-xs text-gray-400 mt-1">{file.mime_type} · {(file.size / 1024).toFixed(1)} KB</p>
                       {file.uploaded_at && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          🕐 {new Date(file.uploaded_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">🕐 {new Date(file.uploaded_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                       )}
                     </div>
                   </div>
                   {isPrivileged && (
-                    <button
-                      onClick={() => handleDeleteFile(file.id)}
-                      disabled={deletingId === file.id}
-                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs text-red-500 hover:bg-red-100 transition disabled:opacity-50"
-                    >
+                    <button onClick={() => handleDeleteFile(file.id)} disabled={deletingId === file.id}
+                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs text-red-500 hover:bg-red-100 transition disabled:opacity-50">
                       {deletingId === file.id ? '…' : t('Delete', 'מחק')}
                     </button>
                   )}
-                  <MediaViewer boxFileId={file.object_key} mediaType="document"
-                    fileName={file.description} uploadedAt={file.uploaded_at} />
+                  <MediaViewer boxFileId={file.object_key} mediaType="document" fileName={file.description} uploadedAt={file.uploaded_at} />
                 </div>
               ))}
             </div>
@@ -850,10 +774,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   <h2 className="text-lg font-semibold text-gray-900">📷 {t('Work Media', 'מדיית עבודה')}</h2>
                   <p className="text-sm text-gray-500 mt-0.5">{t('Site photos and videos by category', 'תמונות וסרטונים מהאתר לפי קטגוריה')}</p>
                 </div>
-                <button
-                  onClick={() => { setShowMediaUpload(true); setMediaCategory(''); setMediaDescription(''); setMediaFiles(null); setMediaError(null); setMediaSuccess(false); }}
-                  className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
-                >
+                <button onClick={() => { setShowMediaUpload(true); setMediaCategory(''); setMediaDescription(''); setMediaFiles(null); setMediaError(null); setMediaSuccess(false); }}
+                  className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition">
                   + {t('Upload', 'העלה')}
                 </button>
               </div>
@@ -865,21 +787,19 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               ) : workMedia.length === 0 ? (
                 <div className="rounded-2xl border border-gray-200 bg-[#F5F6FA] p-10 text-center">
                   <p className="text-gray-400 mb-4">{t('No work media yet.', 'אין מדיית עבודה עדיין.')}</p>
-                  <button
-                    onClick={() => { setShowMediaUpload(true); setMediaCategory(''); setMediaDescription(''); setMediaFiles(null); setMediaError(null); setMediaSuccess(false); }}
-                    className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition"
-                  >
+                  <button onClick={() => { setShowMediaUpload(true); setMediaCategory(''); setMediaDescription(''); setMediaFiles(null); setMediaError(null); setMediaSuccess(false); }}
+                    className="rounded-full bg-[#11144C] px-5 py-2 text-sm font-semibold text-white hover:bg-[#11144C]/90 transition">
                     + {t('Upload first media', 'העלה מדיה ראשונה')}
                   </button>
                 </div>
               ) : (
-                MEDIA_CATEGORIES.map(category => {
-                  const items = mediaByCategory[category];
-                  if (items.length === 0) return null;
+                MEDIA_CATEGORIES.map(cat => {
+                  const items = mediaByCategory[cat.en];
+                  if (!items || items.length === 0) return null;
                   return (
-                    <div key={category} className="space-y-3">
+                    <div key={cat.en} className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <h3 className="text-sm font-semibold text-gray-700">{category}</h3>
+                        <h3 className="text-sm font-semibold text-gray-700">{categoryLabel(cat, lang)}</h3>
                         <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">{items.length}</span>
                         <div className="flex-1 h-px bg-gray-200" />
                       </div>
@@ -892,8 +812,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                 <video src={item.url} controls className="w-full aspect-square object-cover" />
                               ) : (
                                 <a href={item.url} target="_blank" rel="noopener noreferrer">
-                                  <img src={item.url} alt={displayName}
-                                    className="w-full aspect-square object-cover hover:opacity-90 transition" />
+                                  <img src={item.url} alt={displayName} className="w-full aspect-square object-cover hover:opacity-90 transition" />
                                 </a>
                               )}
                               <div className="px-2 py-2 space-y-0.5">
@@ -902,10 +821,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                 {!description && !uploadedAt && <p className="text-xs text-gray-400 truncate">{displayName}</p>}
                               </div>
                               {isPrivileged && (
-                                <button
-                                  onClick={() => handleDeleteWorkMedia(item.path)}
-                                  className="absolute top-2 right-2 rounded-full bg-red-500/80 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition"
-                                >
+                                <button onClick={() => handleDeleteWorkMedia(item.path)}
+                                  className="absolute top-2 right-2 rounded-full bg-red-500/80 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition">
                                   {t('Delete', 'מחק')}
                                 </button>
                               )}
@@ -932,18 +849,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               <button onClick={() => setShowNewTask(false)} className="text-gray-400 hover:text-gray-900 transition text-lg">✕</button>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                {t('Title', 'כותרת')} <span className="text-red-500">*</span>
-              </label>
-              <input type="text" value={newTaskForm.title}
-                onChange={e => setNewTaskForm({ ...newTaskForm, title: e.target.value })}
+              <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Title', 'כותרת')} <span className="text-red-500">*</span></label>
+              <input type="text" value={newTaskForm.title} onChange={e => setNewTaskForm({ ...newTaskForm, title: e.target.value })}
                 placeholder={t('Task title', 'כותרת המשימה')}
                 className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400" />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">{t('Assignee', 'אחראי')}</label>
-              <select value={newTaskForm.assigneeId}
-                onChange={e => setNewTaskForm({ ...newTaskForm, assigneeId: e.target.value })}
+              <select value={newTaskForm.assigneeId} onChange={e => setNewTaskForm({ ...newTaskForm, assigneeId: e.target.value })}
                 className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30">
                 <option value="">{t('Unassigned', 'לא מוקצה')}</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
@@ -953,10 +866,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               <label className="mb-2 block text-sm font-semibold text-gray-700">
                 {t('Description', 'תיאור')} <span className="text-gray-400 font-normal">({t('optional', 'אופציונלי')})</span>
               </label>
-              <textarea value={newTaskForm.description}
-                onChange={e => setNewTaskForm({ ...newTaskForm, description: e.target.value })}
-                placeholder={t('Optional description', 'תיאור אופציונלי')}
-                rows={3}
+              <textarea value={newTaskForm.description} onChange={e => setNewTaskForm({ ...newTaskForm, description: e.target.value })}
+                placeholder={t('Optional description', 'תיאור אופציונלי')} rows={3}
                 className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400 resize-none" />
             </div>
             {newTaskError && <p className="text-sm text-red-500">{newTaskError}</p>}
@@ -987,7 +898,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               <select value={mediaCategory} onChange={(e) => setMediaCategory(e.target.value)}
                 className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30">
                 <option value="">{t('Select a category...', 'בחר קטגוריה...')}</option>
-                {MEDIA_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                {MEDIA_CATEGORIES.map(cat => (
+                  <option key={cat.en} value={cat.en}>{categoryLabel(cat, lang)}</option>
+                ))}
+              
+              <p className="text-xs text-red-500">lang: {lang}</p>
+              
               </select>
             </div>
             <div>
@@ -1039,14 +955,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               </label>
               <input type="text" value={paperworkDescription}
                 onChange={(e) => setPaperworkDescription(e.target.value.substring(0, 20))}
-                placeholder={t('e.g. Building permit', 'לדוג. היתר בנייה')}
-                maxLength={20}
+                placeholder={t('e.g. Building permit', 'לדוג. היתר בנייה')} maxLength={20}
                 className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-4 py-3 text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400" />
               <p className="mt-1 text-right text-xs text-gray-400">{paperworkDescription.length}/20</p>
             </div>
             <div>
-              <input ref={paperworkInputRef} type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*" className="hidden"
+              <input ref={paperworkInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) setPaperworkFile(f); }} />
               {!paperworkFile ? (
                 <button onClick={() => paperworkInputRef.current?.click()}

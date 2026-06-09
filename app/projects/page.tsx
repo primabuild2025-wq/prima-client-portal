@@ -35,13 +35,10 @@ export default function ProjectsPage() {
       const { data: user } = await supabase.from('users').select('*').eq('id', session.user.id).single();
       setCurrentUser(user);
 
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*, owner:users!owner_id(name, email), tasks(id, status)')
-        .order('created_at', { ascending: false });
-
-      if (projectsError) throw projectsError;
-      setProjects(projectsData || []);
+      const projectsResponse = await fetch('/api/projects');
+      const projectsData = await projectsResponse.json();
+      if (!projectsResponse.ok) throw new Error(projectsData.error || 'Failed to fetch projects');
+      setProjects(projectsData.projects || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
