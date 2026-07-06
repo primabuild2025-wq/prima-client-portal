@@ -17,6 +17,8 @@ interface MediaUploadProps {
   projectId: string;
   taskId?: string;
   onUploadComplete?: (file: any) => void;
+  showCategory?: boolean;
+  showDescription?: boolean;
 }
 
 function formatTimestamp(date: Date, lang: string): string {
@@ -29,7 +31,7 @@ function formatTimestamp(date: Date, lang: string): string {
   });
 }
 
-export default function MediaUpload({ projectId, taskId, onUploadComplete }: MediaUploadProps) {
+export default function MediaUpload({ projectId, taskId, onUploadComplete, showCategory = true, showDescription = true }: MediaUploadProps) {
   const [uploading, setUploading]       = useState(false);
   const [error, setError]               = useState<string | null>(null);
   const [description, setDescription]   = useState('');
@@ -50,7 +52,7 @@ export default function MediaUpload({ projectId, taskId, onUploadComplete }: Med
   const handleUpload = async () => {
     if (!selectedFile) return;
 
-    if (!description.trim()) {
+    if (showDescription && !description.trim()) {
       setError(t('Description is required.', 'תיאור הוא שדה חובה.'));
       return;
     }
@@ -66,9 +68,9 @@ export default function MediaUpload({ projectId, taskId, onUploadComplete }: Med
       formData.append('file', selectedFile);
       formData.append('projectId', projectId);
       if (taskId) formData.append('taskId', taskId);
-      formData.append('description', description.substring(0, 20));
+      if (showDescription && description) formData.append('description', description.substring(0, 20));
       formData.append('uploadedAt', uploadedAt.toISOString());
-      if (category) formData.append('category', category);
+      if (showCategory && category) formData.append('category', category);
 
       const res  = await fetch('/api/media/upload', { method: 'POST', body: formData });
       const data = await res.json();
@@ -98,39 +100,41 @@ export default function MediaUpload({ projectId, taskId, onUploadComplete }: Med
   return (
     <div className="space-y-3">
 
-      {/* Description */}
-      <div>
-        <label className="mb-1 block text-xs font-semibold text-gray-700">
-          {t('Description', 'תיאור')} <span className="text-red-500">*</span>{' '}
-          <span className="text-gray-400">({t('max 20 chars', 'עד 20 תווים')})</span>
-        </label>
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value.substring(0, 20))}
-          className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400"
-          placeholder={t('e.g. Site photo day 1', 'לדוג. תמונת אתר יום 1')}
-          maxLength={20}
-        />
-        <p className="mt-1 text-right text-xs text-gray-400">{description.length}/20</p>
-      </div>
+      {showDescription && (
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-gray-700">
+            {t('Description', 'תיאור')} <span className="text-red-500">*</span>{' '}
+            <span className="text-gray-400">({t('max 20 chars', 'עד 20 תווים')})</span>
+          </label>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value.substring(0, 20))}
+            className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30 placeholder:text-gray-400"
+            placeholder={t('e.g. Site photo day 1', 'לדוג. תמונת אתר יום 1')}
+            maxLength={20}
+          />
+          <p className="mt-1 text-right text-xs text-gray-400">{description.length}/20</p>
+        </div>
+      )}
 
-      {/* Category */}
-      <div>
-        <label className="mb-1 block text-xs font-semibold text-gray-700">
-          {t('Category', 'קטגוריה')}
-        </label>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30"
-        >
-          <option value="">{t('Select a category...', 'בחר קטגוריה...')}</option>
-          {FILE_CATEGORIES.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-      </div>
+      {showCategory && (
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-gray-700">
+            {t('Category', 'קטגוריה')}
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-[#F5F6FA] px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#11144C]/30"
+          >
+            <option value="">{t('Select a category...', 'בחר קטגוריה...')}</option>
+            {FILE_CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Drop zone */}
       {!selectedFile && (

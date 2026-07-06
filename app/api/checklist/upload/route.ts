@@ -11,10 +11,12 @@ async function getCurrentUser() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll() { return cookieStore.getAll(); }, setAll() {} } }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return null;
-  const { data: user } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-  return user;
+  // Use getUser() to validate the stored token with the Supabase Auth server
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: userRow, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+  if (error) return null;
+  return userRow;
 }
 
 export async function POST(request: Request) {
@@ -44,34 +46,70 @@ export async function POST(request: Request) {
     console.log('First row keys:', Object.keys(rows[0]));
     console.log('First row:', rows[0]);
 
-    const items = rows.map((row: any) => {
-    const number      = Number(row['Number'] ?? row['number'] ?? row['מספר'] ?? 0);
-    const description = String(row['Description'] ?? row['description'] ?? row['תיאור'] ?? '').trim();
-    const rawPct      = Number(row['Percentage'] ?? row['percentage'] ?? row['אחוז'] ?? row['%'] ?? 0);
-    return { number, description, percentage: rawPct };
+    function getCell(row: any, keys: string[]) {
+      for (const key of keys) {
+        if (row[key] !== undefined) return row[key];
+      }
+      const lower = Object.keys(row).reduce((acc: any, k) => ({ ...acc, [k.toLowerCase()]: row[k] }), {});
+      for (const key of keys) {
+        if (lower[key.toLowerCase()] !== undefined) return lower[key.toLowerCase()];
+      }
+      return undefined;
+    }
+
+    function parsePercentage(raw: any) {
+      if (raw === undefined || raw === null || raw === '') return 0;
+      if (typeof raw === 'number') return raw;
+      let s = String(raw).trim();
+      s = s.replace(/%/g, '').replace(/\s+/g, '').replace(/,/g, '.');
+      const value = parseFloat(s);
+      return Number.isNaN(value) ? NaN : value;
+    }
+
+    const items = rows.map((row: any, idx: number) => {
+      const number      = Number(getCell(row, ['Number', 'number', 'מספר']) ?? idx + 1);
+      const description = String(getCell(row, ['Description', 'description', 'DESCRIPTION', 'תיאור']) ?? '').trim();
+      const rawPct      = getCell(row, ['Percentage', 'percentage', 'PERCENTAGE', 'אחוז', '%']);
+      const percentage  = parsePercentage(rawPct);
+      return { number, description, percentage, rawPct };
     }).filter(item => item.description);
+
+    if (items.length === 0)
+      return NextResponse.json({ error: 'No valid checklist rows found. Check headers and description values.' }, { status: 400 });
 
     // Validate all rows have valid data
     for (const item of items) {
       if (isNaN(item.number) || !item.description || isNaN(item.percentage))
         return NextResponse.json({ error: `Invalid data in row: ${JSON.stringify(item)}` }, { status: 400 });
-      if (item.percentage < 0 || item.percentage > 100)
-        return NextResponse.json({ error: `Percentage out of range in row ${item.number}` }, { status: 400 });
+      if (item.percentage < 0)
+        return NextResponse.json({ error: `Percentage must be positive in row ${item.number}` }, { status: 400 });
     }
 
-    // Validate percentages add up to 100
-    const total = items.reduce((sum, item) => sum + item.percentage, 0);
+    let total = items.reduce((sum, item) => sum + item.percentage, 0);
+    let warning: string | null = null;
 
     // Auto-convert decimal format (0-1) to percentage format (0-100)
-    if (total <= 1.01) {
-    items.forEach(item => { item.percentage = Math.round(item.percentage * 100 * 100) / 100; });
+    if (total > 0 && total <= 1.01) {
+      items.forEach(item => { item.percentage = Math.round(item.percentage * 100 * 100) / 100; });
+      total = items.reduce((sum, item) => sum + item.percentage, 0);
+      warning = 'Values were auto-normalized to sum to 100%.';
+      console.log('Converted decimal-format percentages to 0-100 scale; new total:', total);
+    }
+
+    // Auto-normalize totals when the values are weights rather than actual percentages
+    if (total > 0 && Math.abs(total - 100) > 0.1) {
+      const scale = 100 / total;
+      items.forEach(item => { item.percentage = Math.round((item.percentage * scale) * 100) / 100; });
+      total = items.reduce((sum, item) => sum + item.percentage, 0);
+      warning = 'Values were auto-normalized to sum to 100%.';
+      console.log('Auto-normalized weights to sum to 100; scale:', scale, 'new total:', total);
     }
 
     const finalTotal = items.reduce((sum, item) => sum + item.percentage, 0);
-    if (Math.abs(finalTotal - 100) > 0.1)
-    return NextResponse.json({
+    if (Math.abs(finalTotal - 100) > 0.5)
+      return NextResponse.json({
         error: `Percentages must add up to 100%. Current total: ${finalTotal.toFixed(2)}%`
-    }, { status: 400 });
+      }, { status: 400 });
 
     // Delete existing checklist for this project and replace
     await supabaseAdmin.from('project_checklist').delete().eq('project_id', projectId);
@@ -88,7 +126,7 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, count: items.length, total });
+    return NextResponse.json({ success: true, count: items.length, total, warning });
   } catch (err: any) {
     console.error('Checklist upload error:', err);
     return NextResponse.json({ error: err.message || 'Upload failed' }, { status: 500 });

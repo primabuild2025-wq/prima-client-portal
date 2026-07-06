@@ -574,7 +574,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
             {showUpload && (
               <div className="mt-6 rounded-2xl border border-gray-200 bg-[#F5F6FA] p-6">
-                <MediaUpload projectId={id} onUploadComplete={() => { loadData(); setShowUpload(false); }} />
+                <MediaUpload
+                  projectId={id}
+                  onUploadComplete={() => { loadData(); setShowUpload(false); }}
+                  showCategory={activeTab !== 'checklist'}
+                  showDescription={activeTab !== 'checklist'}
+                />
               </div>
             )}
           </div>

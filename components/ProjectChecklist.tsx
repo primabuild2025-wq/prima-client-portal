@@ -23,6 +23,8 @@ export default function ProjectChecklist({ projectId, isPrivileged, minimal = fa
   const [loaded, setLoaded]           = useState(false);
   const [uploading, setUploading]     = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [toggling, setToggling]       = useState<string | null>(null);
   const fileInputRef                  = useRef<HTMLInputElement>(null);
@@ -36,6 +38,13 @@ export default function ProjectChecklist({ projectId, isPrivileged, minimal = fa
 
   useEffect(() => { loadItems(); }, [projectId]);
 
+  useEffect(() => {
+    // Dev-time diagnostic to confirm ref attachment
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ProjectChecklist mounted. fileInputRef current:', fileInputRef.current);
+    }
+  }, []);
+
   async function loadItems() {
   const res  = await fetch(`/api/checklist?projectId=${projectId}`);
   const data = await res.json();
@@ -47,14 +56,12 @@ async function toggleItem(item: ChecklistItem) {
   if (!isPrivileged) return;
   setToggling(item.id);
   try {
-    const { data: { session } } = await supabase.auth.getSession();
     await fetch('/api/checklist', {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
         id:        item.id,
         completed: !item.completed,
-        userId:    session?.user.id,
       }),
     });
     setItems(items.map(i => i.id === item.id ? { ...i, completed: !i.completed } : i));
@@ -66,20 +73,28 @@ async function toggleItem(item: ChecklistItem) {
   async function handleUpload(file: File) {
     setUploading(true);
     setUploadError(null);
+    setUploadWarning(null);
     setUploadSuccess(false);
+    setUploadStatus(`Selected file: ${file.name}`);
     try {
       console.log('Uploading checklist file:', file.name, file.type, projectId);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('projectId', projectId);
+      setUploadStatus('Uploading file...');
       const res  = await fetch('/api/checklist/upload', { method: 'POST', body: formData });
       const data = await res.json().catch(() => ({ error: `Upload failed with status ${res.status}` }));
+      setUploadStatus(`Upload response status: ${res.status}`);
       if (!res.ok) throw new Error(data.error || `Upload failed with status ${res.status}`);
       setUploadSuccess(true);
+      setUploadWarning(data.warning || null);
       await loadItems();
+      setUploadStatus('Upload succeeded');
     } catch (err: any) {
       console.error('Checklist upload error:', err);
       setUploadError(err.message || 'Upload failed. See console for details.');
+      setUploadWarning(null);
+      setUploadStatus('Upload failed');
     } finally {
       setUploading(false);
     }
@@ -133,13 +148,19 @@ async function toggleItem(item: ChecklistItem) {
         <div className="space-y-2">
           <input
             ref={fileInputRef}
+            id="checklist-file-input"
             type="file"
             accept=".xlsx,.xls,.csv"
             className="hidden"
+            onClick={() => console.log('Checklist file input clicked')}
             onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }}
           />
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              console.log('Checklist upload button clicked');
+              if (!fileInputRef.current) console.warn('fileInputRef is null');
+              fileInputRef.current?.click();
+            }}
             disabled={uploading}
             className="rounded-full border border-white/10 px-4 py-1.5 text-xs text-white/60 hover:text-white hover:bg-white/10 transition disabled:opacity-50"
           >
@@ -151,6 +172,25 @@ async function toggleItem(item: ChecklistItem) {
           </button>
           {uploadError   && <p className="text-xs text-red-400">{uploadError}</p>}
           {uploadSuccess && <p className="text-xs text-emerald-400">✓ {t('Checklist uploaded successfully', 'הרשימה הועלתה בהצלחה')}</p>}
+          {uploadWarning && <p className="text-xs text-yellow-300">⚠️ {uploadWarning}</p>}
+          {uploadStatus && <p className="text-xs text-gray-300">{uploadStatus}</p>}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2">
+              <button
+                onClick={() => {
+                  console.log('DEV DEBUG: fileInputRef:', fileInputRef.current);
+                  try {
+                    fileInputRef.current?.click();
+                  } catch (err) {
+                    console.error('DEV DEBUG: click failed', err);
+                  }
+                }}
+                className="text-xs text-gray-300 underline"
+              >
+                DEV: Open file picker
+              </button>
+            </div>
+          )}
         </div>
       )}
 
