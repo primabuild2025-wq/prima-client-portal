@@ -68,16 +68,18 @@ async function toggleItem(item: ChecklistItem) {
     setUploadError(null);
     setUploadSuccess(false);
     try {
+      console.log('Uploading checklist file:', file.name, file.type, projectId);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('projectId', projectId);
       const res  = await fetch('/api/checklist/upload', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = await res.json().catch(() => ({ error: `Upload failed with status ${res.status}` }));
+      if (!res.ok) throw new Error(data.error || `Upload failed with status ${res.status}`);
       setUploadSuccess(true);
       await loadItems();
     } catch (err: any) {
-      setUploadError(err.message);
+      console.error('Checklist upload error:', err);
+      setUploadError(err.message || 'Upload failed. See console for details.');
     } finally {
       setUploading(false);
     }
