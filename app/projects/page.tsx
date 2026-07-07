@@ -7,7 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import { useLang } from '@/lib/context/LanguageContext';
 import ProjectChecklist from '@/components/ProjectChecklist';
 
-const EXTERNAL_ROLES = ['client', 'designer', 'supervisor'];
+const EXTERNAL_ROLES = ['client', 'designer', 'supervisor', 'Supervisor'];
 
 export default function ProjectsPage() {
   const [projects, setProjects]     = useState<any[]>([]);

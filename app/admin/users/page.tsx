@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { useLang } from '@/lib/context/LanguageContext';
 
-const ROLES = ['admin', 'management', 'staff', 'designer', 'client'];
+const ROLES = ['admin', 'management', 'staff', 'designer', 'client', 'supervisor'];
 
 const roleLabel = (role: string) => {
   switch (role) {
@@ -15,6 +15,7 @@ const roleLabel = (role: string) => {
     case 'staff':      return 'Staff (Internal)';
     case 'designer':   return 'Designer (External)';
     case 'client':     return 'Client';
+    case 'supervisor': return 'Supervisor (External)';
     default:           return role;
   }
 };
@@ -26,6 +27,7 @@ const roleColor = (role: string) => {
     case 'staff':      return 'text-green-700 bg-green-50 border-green-200';
     case 'designer':   return 'text-yellow-700 bg-yellow-50 border-yellow-200';
     case 'client':     return 'text-orange-700 bg-orange-50 border-orange-200';
+    case 'supervisor': return 'text-cyan-700 bg-cyan-50 border-cyan-200';
     default:           return 'text-gray-500 bg-gray-100 border-gray-200';
   }
 };

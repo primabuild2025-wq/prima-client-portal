@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const EXTERNAL_ROLES   = ['client', 'designer', 'supervisor'];
+const EXTERNAL_ROLES   = ['client', 'designer', 'supervisor', 'Supervisor'];
 const EXTERNAL_BLOCKED = ['/tasks', '/notifications', '/admin'];
 
 export async function middleware(request: NextRequest) {

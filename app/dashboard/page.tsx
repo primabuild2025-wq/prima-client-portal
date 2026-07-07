@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { useLang } from '@/lib/context/LanguageContext';
 
-const EXTERNAL_ROLES = ['client', 'designer', 'supervisor'];
+const EXTERNAL_ROLES = ['client', 'designer', 'supervisor', 'Supervisor'];
 
 interface DashboardData {
   stats: {

@@ -9,6 +9,7 @@ import MediaViewer from '@/components/MediaViewer';
 import { useLang } from '@/lib/context/LanguageContext';
 import { useAdminDelete } from '@/lib/hooks/useAdminDelete';
 import ProjectChecklist from '@/components/ProjectChecklist';
+import ReportsTab from '@/components/ReportsTab';
 
 const MEDIA_CATEGORIES = [
   { en: 'Plumbing',            he: 'אינסטלציה' },
@@ -58,7 +59,7 @@ function parseMediaFilename(filename: string): { displayName: string; descriptio
   return { displayName, description, uploadedAt };
 }
 
-const EXTERNAL_ROLES = ['client', 'designer', 'supervisor'];
+const EXTERNAL_ROLES = ['client', 'designer', 'supervisor', 'Supervisor'];
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const id = params.id;
@@ -72,7 +73,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [members, setMembers]                 = useState<any[]>([]);
   const [loading, setLoading]                 = useState(true);
   const [error, setError]                     = useState<string | null>(null);
-  const [activeTab, setActiveTab]             = useState<'tasks' | 'photos' | 'files' | 'checklist' | 'workmedia' | 'paperwork'>('tasks');
+  const [activeTab, setActiveTab]             = useState<'tasks' | 'photos' | 'files' | 'checklist' | 'workmedia' | 'paperwork' | 'reports'>('tasks');
   const [showUpload, setShowUpload]           = useState(false);
   const [currentUser, setCurrentUser]         = useState<any>(null);
 
@@ -586,7 +587,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
           {/* Tabs */}
           <div className="flex gap-2 flex-wrap">
-            {(['tasks', 'photos', 'files', 'paperwork', 'checklist', 'workmedia'] as const).map(tab => (
+            {(['tasks', 'photos', 'files', 'paperwork', 'checklist', 'workmedia', 'reports'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`rounded-full px-5 py-2 text-sm font-medium transition ${
                   activeTab === tab ? 'bg-[#11144C] text-white' : 'border border-gray-200 text-gray-600 hover:bg-[#11144C]/5 hover:border-[#11144C]/30'
@@ -596,6 +597,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 : tab === 'files'    ? `${t('Files', 'קבצים')} (${pdfFiles.length})`
                 : tab === 'paperwork'? `${t('Paperwork', 'ניירת')}${paperworkFiles.length > 0 ? ` (${paperworkFiles.length})` : ''}`
                 : tab === 'checklist'? t('Mile Stones', 'אבני דרך')
+                : tab === 'reports' ? t('Reports', 'דוחות')
                 : `${t('Work Media', 'מדיית עבודה')}${workMedia.length > 0 ? ` (${workMedia.length})` : ''}`}
               </button>
             ))}
@@ -770,6 +772,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           {activeTab === 'checklist' && (
             <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
               <ProjectChecklist projectId={id} isPrivileged={isPrivileged} />
+            </div>
+          )}
+
+          {/* Reports Tab */}
+          {activeTab === 'reports' && (
+            <div className="rounded-3xl bg-white border border-gray-200 shadow-sm p-8">
+              <ReportsTab projectName={project.name} projectNames={[project.name]} currentUserName={currentUser?.name || ''} />
             </div>
           )}
 

@@ -26,7 +26,7 @@ export default function Sidebar() {
     });
   }, []);
 
-  const EXTERNAL_ROLES = ['client', 'designer', 'supervisor'];
+  const EXTERNAL_ROLES = ['client', 'designer', 'supervisor', 'Supervisor'];
   const isExternal = role ? EXTERNAL_ROLES.includes(role) : false;
 
   const navItems = [
